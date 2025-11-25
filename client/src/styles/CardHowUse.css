@@ -1,0 +1,43 @@
+:root {
+  --gradient: linear-gradient(45deg, #d946ef, #8b5cf6, #00d2ff);
+
+  --color-pink: #d946ef;
+  --color-purple: #8b5cf6;
+  --color-cyan: #00d2ff;
+}
+
+.card{
+    height: 350px;
+    width: 400px;
+    background-color: #FBFBFC;
+    border: 1px solid #E4E4E7;
+    border-radius: 30px;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+}
+
+.icon-card{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 90px;
+    height: 90px;
+    size: 50px;
+    border-radius: 100px;
+    background-image: var(--gradient);
+    margin-bottom: 30px;
+}
+.title-card{
+    text-align: start;
+    font-size: 20px;
+    width: 100%;
+    height: 20%;
+}
+.subtitle-card{
+    width: 100%;
+    height: 20%;
+    margin-bottom: 10px;
+}
