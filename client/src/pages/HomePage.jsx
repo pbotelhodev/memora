@@ -24,7 +24,7 @@ import PhotoProfile from "../assets/photo-profile.jpg";
 
 //Imports styles
 import "../styles/Header.css";
-import "../styles/Mainhome.css";
+import "../styles/MainHome.css";
 
 function HomePage() {
   useEffect(() => {

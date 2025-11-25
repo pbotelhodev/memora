@@ -1,4 +1,5 @@
 import '../styles/CardHowUse.css'
+
 const CardHowUse = ({ icon: Icon, title, subtitle }) => {
   return (
     <div className="card">
