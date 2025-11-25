@@ -41,5 +41,39 @@
     height: 20%;
     margin-bottom: 10px;
     text-align: start;
+    color: black;
+}
+
+
+.cto-section{
+    background-color: #FBFBFC;
+    padding: 70px;
+}
+.cto-card{
+    width: 70%;
+    margin: 0px auto;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+
     
+    & h1{
+        font-size: 50px;
+        text-align: center
+    };
+    & p{
+        font-size: 19px;
+        color: #808080;
+        margin: 20px
+    };
+    & button{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 20px;
+    }
 }

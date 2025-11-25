@@ -8,7 +8,7 @@ import {
   Camera,
   User,
   QrCode,
-  Share2
+  Share2,
 } from "lucide-react";
 
 //Imports components
@@ -298,6 +298,21 @@ function HomePage() {
                 "Distribua o QR code para seus convidados e deixe todos compartilharem os melhores momentos!"
               }
             />
+          </div>
+        </section>
+
+        <section className="cto-section">
+          <div className="cto-card">
+            <h1 className="gradient">Pronto para criar memórias incríveis?</h1>
+            <p>
+              Comece agora e transforme sua festa em uma experiência digital
+              única!
+            </p>
+            <Link to={ROUTES.CREATE_PARTY}>
+              <button>
+                Criar Minha Festa Agora <ArrowRight />
+              </button>
+            </Link>
           </div>
         </section>
       </main>
