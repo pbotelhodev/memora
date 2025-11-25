@@ -23,8 +23,8 @@ import HalfImage from "../assets/half-image.png";
 import PhotoProfile from "../assets/photo-profile.jpg";
 
 //Imports styles
-import "../styles/header.css";
-import "../styles/mainhome.css";
+import "../styles/Header.css";
+import "../styles/Mainhome.css";
 
 function HomePage() {
   useEffect(() => {
