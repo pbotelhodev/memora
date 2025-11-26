@@ -271,14 +271,14 @@ function HomePage() {
             />
             <CardHowUse
               icon={<QrCode className="icon-badge" />}
-              title={"1. Crie Sua Festa"}
+              title={"2. Gere o QR Code"}
               subtitle={
                 "Após o pagamento, receba um QR code exclusivo com o link da rede social da sua festa."
               }
             />
             <CardHowUse
               icon={<Share2 className="icon-badge" />}
-              title={"1. Crie Sua Festa"}
+              title={"3. Compartilhe"}
               subtitle={
                 "Distribua o QR code para seus convidados e deixe todos compartilharem os melhores momentos!"
               }
@@ -286,20 +286,24 @@ function HomePage() {
           </div>
         </section>
 
-        {/* ========== StepSection ========= */}
+        {/* ========== CTOSection ========= */}
 
         <section className="cto-section">
-          <div className="cto-card">
-            <h1 className="gradient">Pronto para criar memórias incríveis?</h1>
-            <p>
-              Comece agora e transforme sua festa em uma experiência digital
-              única!
-            </p>
-            <Link to={ROUTES.CREATE_PARTY}>
-              <button>
-                Criar Minha Festa Agora <ArrowRight />
-              </button>
-            </Link>
+          <div className="cto-container">
+            <div className="cto-card">
+              <h1 className="gradient">
+                Pronto para criar memórias incríveis?
+              </h1>
+              <p>
+                Comece agora e transforme sua festa em uma experiência digital
+                única!
+              </p>
+              <Link to={ROUTES.CREATE_PARTY}>
+                <button>
+                  Criar Minha Festa Agora <ArrowRight />
+                </button>
+              </Link>
+            </div>
           </div>
         </section>
       </main>
