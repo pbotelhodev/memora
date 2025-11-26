@@ -14,7 +14,7 @@ const Inputs = ({ title, icon: Icon, type, placeholder }) => {
         placeholder={placeholder}
         style={
           type === "date"
-            ? { fontFamily: "Poppins", fontSize: "0.9em", color: "#7a797aff" }
+            ? { fontFamily: "Poppins", fontSize: "0.9em", color: "#7a797aff", backgroundColor: 'white' }
             : {}
         }
       />
