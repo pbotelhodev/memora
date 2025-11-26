@@ -97,9 +97,7 @@ function HomePage() {
               <div className="cell-area">
                 <div className="cellphone">
                   <div className="cell-header">
-                    <h2 className="gradient" style={{ fontSize: "20px" }}>
-                      XVI da Aurora
-                    </h2>
+                    <h2 className="gradient">XVI da Aurora</h2>
                   </div>
                   <div className="post">
                     <div className="photo-user">
@@ -273,16 +271,16 @@ function HomePage() {
             />
             <CardHowUse
               icon={<QrCode className="icon-badge" />}
-              title={"2. Gere o QR Code"}
+              title={"1. Crie Sua Festa"}
               subtitle={
                 "Após o pagamento, receba um QR code exclusivo com o link da rede social da sua festa."
               }
             />
             <CardHowUse
               icon={<Share2 className="icon-badge" />}
-              title={"2. Gere o QR Code"}
+              title={"1. Crie Sua Festa"}
               subtitle={
-                "Após o pagamento, receba um QR code exclusivo com o link da rede social da sua festa."
+                "Distribua o QR code para seus convidados e deixe todos compartilharem os melhores momentos!"
               }
             />
           </div>
