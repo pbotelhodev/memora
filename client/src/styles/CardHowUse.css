@@ -27,22 +27,24 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 60px;
-  height: 60px;
+  padding: 20px ;
   border-radius: 100%;
   background-image: var(--gradient);
   margin-bottom: 30px;
+  border: 1px solid red;
 }
 .title-card {
   display: flex;
   justify-content: start;
   font-size: 1em;
   width: 100%;
+  border: 1px solid red;
 }
 .subtitle-card {
   width: 100%;
   margin-bottom: 10px;
   text-align: start;
+  border: 1px solid red;
 }
 /* ==========================================
 
