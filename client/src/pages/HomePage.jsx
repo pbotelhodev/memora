@@ -34,7 +34,7 @@ function HomePage() {
       {/* ========== Main ========= */}
       <main>
         {/* ========== Hero ========= */}
-        <section className="hero-section">
+        <section className="hero-section .bg-base">
           <div className="container-main-home">
             <div className="hero-left">
               <div className="hero-title-area">
@@ -246,7 +246,7 @@ function HomePage() {
         {/* ========== StepSection ========= */}
 
         <section className="steps-section">
-          <h1 className="gradient title-card-steps">Como funciona</h1>
+          <h1 className="title-card-steps">Como funciona</h1>
           <div className="steps-container">
             <CardHowUse
               icon={<Camera className="icon-badge" />}
@@ -272,11 +272,11 @@ function HomePage() {
           </div>
         </section>
 
-        {/* ========== CTOSection ========= */}
+        {/* ========== Cta Section ========= */}
 
-        <section className="cto-section">
-          <div className="cto-container">
-            <div className="cto-card">
+        <section className="cta-section">
+          <div className="cta-container">
+            <div className="cta-card">
               <h1 className="gradient">
                 Pronto para criar memórias incríveis?
               </h1>

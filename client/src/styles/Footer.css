@@ -1,17 +1,28 @@
-footer {
-  padding: 15px 0px;
-  background-color: white;
-  border-top: 1px solid #e4e4e7;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.site-footer {
+  background-color: #020617; /* Darker */
+  padding: 25px 0;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
-@media (min-width: 1025px) {
-  footer {
-    background-color: white;
-    border-top: 1px solid #e4e4e7;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+
+.copyright {
+  color: #64748B;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.footer-links a {
+  color: #94A3B8;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin: 0 10px;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: #A855F7; /* Roxo no hover */
+}
+
+.separator {
+  color: #475569;
 }

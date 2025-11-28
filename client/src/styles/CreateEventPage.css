@@ -1,10 +1,4 @@
-:root {
-  --gradient: linear-gradient(45deg, #d946ef, #8b5cf6, #00d2ff);
 
-  --color-pink: #d946ef;
-  --color-purple: #8b5cf6;
-  --color-cyan: #00d2ff;
-}
 .gradient {
   font-size: 3em;
   font-weight: bold;
@@ -152,6 +146,14 @@
 .security {
   font-size: 0.8em;
   text-align: center;
+}
+.form{
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+.input-error{
+  border: 1px solid red;
 }
 /* ==========================================
 

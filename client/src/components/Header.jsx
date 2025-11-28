@@ -1,20 +1,20 @@
 import { ROUTES } from "../routes";
 import { Link } from "react-router-dom";
-import LogoImg from "../assets/logo-GoPic.png";
+import LogoImg from "../assets/logo-memora.png";
 
 const Header = ({ showButton = true }) => {
   return (
     <div className="nav-bar">
       <nav className="container-header">
-        <div className="logo-area">
+        <Link className="link-img" to={ROUTES.HOME}>
           <img className="img-logo" src={LogoImg} alt="logoGoPic" />
-        </div>
-        {showButton === true ? <div className="button-area">
+        </Link>
+
+        {showButton === true ? (
           <Link to={ROUTES.CREATE_PARTY}>
             <button className="btn-header">Criar Festa</button>
           </Link>
-        </div> : null}
-        
+        ) : null}
       </nav>
     </div>
   );
