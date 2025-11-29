@@ -149,7 +149,7 @@ const CreateEventPage = () => {
                     title={"CPF"}
                     placeholder={"000.000.000-00"}
                     icon={<IdCard size={18} />}
-                    type={"text"}
+                    type={"tel"}
                     req={true}
                   />
                   <Inputs
@@ -158,7 +158,7 @@ const CreateEventPage = () => {
                     title={"Whatsapp"}
                     placeholder={"(99) 9 9999-9999"}
                     icon={<Smartphone size={18} />}
-                    type={"text"}
+                    type={"tel"}
                     req={true}
                   />
                 </div>
@@ -178,7 +178,7 @@ const CreateEventPage = () => {
                     title={"Número"}
                     placeholder={""}
                     icon={<House size={18} />}
-                    type={"number"}
+                    type={"tel"}
                     req={true}
                   />
                 </div>
