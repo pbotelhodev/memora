@@ -1,38 +1,21 @@
-
-.gradient {
-  font-size: 3em;
-  font-weight: bold;
-  background-image: linear-gradient(45deg, #d946ef, #8b5cf6, #00d2ff);
-  background-clip: text;
-  color: transparent;
-  background-size: 200% 200%;
-  animation: gradientAnim 2s ease infinite;
-}
-@keyframes gradientAnim {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
 /* ==========================================
 
-        BLOCO 1: MOBILE (0px até 767px)
+        BLOCO 1: MOBILE (0px até 1024px)
 
    ========================================== */
-.logo-gopic {
+.logo-memora {
   width: 100%;
-  padding: 10px;
-  background-color: white;
-  text-align: center;
-  border-bottom: 1px solid #f6eef6;
+  background-color: #0f172a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 65px;
+  padding: 23px 15px;
   & img {
-    width: 80px;
+    width: 110px;
     height: auto;
   }
 }
@@ -44,8 +27,9 @@
 .main {
   flex: 1;
   width: 100%;
-  background-color: white;
-  padding: 10px 0px;
+  padding: 20px 0px;
+  background-color: #0f172a;
+  color: #0f172a;
 }
 .container {
   width: 85%;
@@ -69,7 +53,9 @@
   font-size: 1.1em;
   width: 100%;
   margin: 0px auto;
+  color: #94a3b8;
 }
+
 /* ========== Cards ========== */
 .card-cadastro {
   display: flex;
@@ -79,15 +65,20 @@
   gap: 30px;
 }
 .card-register {
-  border-radius: 10px;
-  background-image: linear-gradient(135deg, #d946ef15, #00d2ff15);
-  padding: 25px;
-  border: 1px solid #e4e4e7;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 .title-card {
-  font-size: 1.5em;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 .subtitle-card {
   font-size: 0.8em;
@@ -98,40 +89,58 @@
 }
 .text-title {
   font-weight: 600;
-  color: black;
+  color: white;
+  font-size: 1.3em;
 }
 
-.card-register-plan {
-  background-color: #faeee9;
-  border: 1px solid #e0d5d0;
-  border-radius: 15px;
-  padding: 10px;
-}
-.area-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.title-plan {
-  font-size: 0.5em;
-}
-.price-plan {
-  font-size: 0.5em;
-}
-.row-rewards {
-  font-size: 0.7em;
-  display: flex;
-  justify-content: start;
-  align-items: center;
-  gap: 5px;
-}
+/*  ====== Button ===== */
 .area-button {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 10px;
+  margin-top: 10px;
 }
+.card-register-plan {
+  background: linear-gradient(
+    90deg,
+    rgba(168, 85, 247, 0.1) 0%,
+    rgba(6, 182, 212, 0.1) 100%
+  );
+
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  width: 100%;
+  margin-top: 20px;
+}
+.area-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.text-gradient {
+  background-image: linear-gradient(45deg, #a855f7 0%, #06b6d4 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+.title-plan {
+  font-size: 0.5em;
+  & h1 {
+    margin: auto 0px;
+  }
+}
+
+.price-plan {
+  font-size: 0.5em;
+  & h1 {
+    margin: auto 0px;
+  }
+}
+
 .button-create {
   width: 100%;
 
@@ -146,14 +155,12 @@
 .security {
   font-size: 0.8em;
   text-align: center;
+  color: #94a3b8;
 }
-.form{
+.form {
   display: flex;
   flex-direction: column;
   gap: 30px;
-}
-.input-error{
-  border: 1px solid red;
 }
 /* ==========================================
 
@@ -170,6 +177,12 @@
     margin: 0px autopx;
     gap: 30px;
   }
+  .form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
   .main-title {
     font-size: 1.5em;
   }
@@ -183,26 +196,24 @@
     width: 100%;
   }
   .card-register {
-    width: 32%;
+    width: 35%;
   }
   .title-card {
     display: flex;
   }
-  .row-rewards {
-    font-size: 0.8em;
-  }
-  .area-bottom {
-    padding: 10px 0px;
+  .input-duo {
+    display: flex;
+    gap: 10px;
   }
   .button-create {
     display: flex;
     justify-content: center;
-  & button {
-    width: 400px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
+    & button {
+      width: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
   }
-}
 }

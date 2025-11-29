@@ -19,39 +19,6 @@
   --color-cyan: #06b6d4;
 }
 
-.text-gradient {
-  background: linear-gradient(90deg, #a855f7 0%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  display: inline-block;
-}
-.btn-primary {
-  background: linear-gradient(90deg, #a855f7 0%, #06b6d4 100%);
-  color: #ffffff;
-  border: none;
-  padding: 12px 32px;
-  font-size: 1rem;
-  font-weight: 700;
-  border-radius: 50px;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
-}
-.btn-primary:hover {
-  transform: translateY(-2px); /* Sobe um pouquinho */
-  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6); /* Brilha mais */
-}
-.bg-base {
-  background-color: #0f172a; /* Slate-900 */
-}
-.bg-darker {
-  background-color: #020617; /* Slate-950 (Quase preto total) */
-}
-.bg-surface {
-  background-color: #1e293b; /* Slate-800 */
-}
-
 /* Configurações do corpo do site */
 body {
   font-family: "Poppins", Tahoma, Geneva, Verdana, sans-serif; /* Fonte padrão do sistema */

@@ -9,9 +9,13 @@ import {
   CalendarDays,
   MapPin,
   Mail,
-  Check,
-  NotepadText,
+  IdCard,
+  House,
+  Mailbox,
+  Smartphone,
+  Ticket,
 } from "lucide-react";
+import { maskCPF, maskPhone, maskDate, maskCEP } from "../utils/mask";
 
 //import componets
 import Footer from "../components/Footer";
@@ -24,39 +28,80 @@ import "../styles/CreateEventPage.css";
 import LogoImg from "../assets/logo-memora.png";
 
 const CreateEventPage = () => {
+  /* ========== States ========== */
   const [nameUser, setNameUser] = useState("");
   const [emailUser, setEmailUser] = useState("");
-  //const [cpfUser, setCpfUser] = useState("");
+  const [cpfUser, setCpfUser] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [cepUser, setCepUser] = useState("");
+  const [numberHouseUser, setNumberHouseUser] = useState("");
 
   const [titleEvent, setTitleEvent] = useState("");
   const [dateEvent, setDateEvent] = useState("");
   const [localEvent, setLocalEvent] = useState("");
+  const [cupomUser, setCupomUser] = useState("");
+  /* =========== Masks ============ */
+  const handleCpfChange = (e) => {
+    setCpfUser(maskCPF(e.target.value));
+  };
 
+  const handlePhoneChange = (e) => {
+    setWhatsapp(maskPhone(e.target.value));
+  };
+
+  const handleDateChange = (e) => {
+    setDateEvent(maskDate(e.target.value));
+  };
+
+  const handleCepChange = (e) => {
+    setCepUser(maskCEP(e.target.value));
+  };
+
+  /* =========== Functions =========== */
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (
+      !nameUser ||
+      !emailUser ||
+      !cpfUser ||
+      !whatsapp ||
+      !cepUser ||
+      !numberHouseUser ||
+      !!titleEvent ||
+      !dateEvent ||
+      !cupomUser
+    ) {
+      alert("Ops! Preencha todos os campos obrigatórios para continuar.");
+      return;
+    }
     console.log(`Dados prontos:}`, {
+      nameUser,
+      emailUser,
+      cpfUser,
+      whatsapp,
+      cepUser,
+      numberHouseUser,
+      cupomUser,
       titleEvent,
       dateEvent,
       localEvent,
-      nameUser,
-      emailUser,
     });
   };
 
   useEffect(() => {
-    document.title = "Criar Festa - GoPic";
+    document.title = "Memora | Criar Festa";
   }, []);
   return (
     <div className="body-createEvent">
       {/* ========== Header ========= */}
-      <div className="logo-gopic">
-        <img src={LogoImg} alt="logo gopic" />
+      <div className="logo-memora">
+        <img src={LogoImg} alt="logo memora" />
       </div>
       {/* ========== Main ========== */}
       <div className="main">
         <div className="container">
           <div className="title-group">
-            <div className="main-title gradient">
+            <div className="main-title ">
               <h1>Crie Sua Festa</h1>
             </div>
             <div className="main-subtitle">
@@ -82,19 +127,61 @@ const CreateEventPage = () => {
                 <Inputs
                   value={nameUser}
                   onChange={(e) => setNameUser(e.target.value)}
-                  title={"Nome Completo*"}
+                  title={"Nome Completo"}
                   placeholder={"Seu nome"}
                   icon={<Pencil size={18} />}
                   type={"text"}
+                  req={true}
                 />
                 <Inputs
                   value={emailUser}
                   onChange={(e) => setEmailUser(e.target.value)}
-                  title={"Email*"}
+                  title={"Email"}
                   placeholder={"seu@email.com"}
                   icon={<Mail size={18} />}
                   type={"email"}
+                  req={true}
                 />
+                <div className="input-duo">
+                  <Inputs
+                    value={cpfUser}
+                    onChange={handleCpfChange}
+                    title={"CPF"}
+                    placeholder={"000.000.000-00"}
+                    icon={<IdCard size={18} />}
+                    type={"text"}
+                    req={true}
+                  />
+                  <Inputs
+                    value={whatsapp}
+                    onChange={handlePhoneChange}
+                    title={"Whatsapp"}
+                    placeholder={"(99) 9 9999-9999"}
+                    icon={<Smartphone size={18} />}
+                    type={"text"}
+                    req={true}
+                  />
+                </div>
+                <div className="input-duo">
+                  <Inputs
+                    value={cepUser}
+                    onChange={handleCepChange}
+                    title={"CEP"}
+                    placeholder={"00000-000"}
+                    icon={<Mailbox size={18} />}
+                    type={"tel"}
+                    req={true}
+                  />
+                  <Inputs
+                    value={whatsapp}
+                    onChange={setNumberHouseUser}
+                    title={"Número"}
+                    placeholder={""}
+                    icon={<House size={18} />}
+                    type={"number"}
+                    req={true}
+                  />
+                </div>
               </div>
 
               {/* ----- Segundo Card ----- */}
@@ -114,54 +201,54 @@ const CreateEventPage = () => {
                 <Inputs
                   value={titleEvent}
                   onChange={(e) => setTitleEvent(e.target.value)}
-                  title={"Nome da Festa*"}
+                  title={"Nome da Festa"}
                   placeholder={"Ex: Aníversário do João"}
                   icon={<Pencil size={18} />}
                   type={"text"}
-                />
-                <Inputs
-                  value={dateEvent}
-                  onChange={(e) => setDateEvent(e.target.value)}
-                  title={"Data do evento*"}
-                  placeholder={"Ex; aníversário do João"}
-                  icon={<CalendarDays size={18} />}
-                  type={"date"}
+                  req={true}
                 />
                 <Inputs
                   value={localEvent}
                   onChange={(e) => setLocalEvent(e.target.value)}
-                  title={"Local*"}
+                  title={"Local"}
                   placeholder={"Ex: Salão de Festas XYZ"}
                   icon={<MapPin size={18} />}
                   type={"text"}
+                  req={false}
                 />
+                <div className="input-duo">
+                  <Inputs
+                    value={dateEvent}
+                    onChange={handleDateChange}
+                    title={"Data do evento"}
+                    placeholder={"DD/MM/AAAA"}
+                    icon={<CalendarDays size={18} />}
+                    type={"tel"}
+                    req={true}
+                  />
+
+                  <Inputs
+                    value={cupomUser}
+                    onChange={(e) => setCupomUser(e.target.value)}
+                    title={"Cupom"}
+                    placeholder={"Possui cupom?"}
+                    icon={<Ticket size={18} />}
+                    type={"text"}
+                    req={false}
+                  />
+                </div>
                 <div className="card-register-plan">
                   <div className="area-top">
                     <div className="title-plan">
-                      <h1>Plano Infinity</h1>
+                      <h1 className="text-gradient">Plano Infinity</h1>
                     </div>
                     <div className="price-plan">
-                      <h1 className="gradient">R$ 99,90</h1>
+                      <h1 className="text-gradient">R$ 99,90</h1>
                     </div>
-                  </div>
-                  <div className="area-bottom">
-                    <p className="row-rewards">
-                      <Check size={12} /> Rede Social Privada
-                    </p>
-                    <p className="row-rewards">
-                      <Check size={12} /> Upload ilimitado de fotos
-                    </p>
-                    <p className="row-rewards">
-                      <Check size={12} /> Qr Code Personalizado
-                    </p>
-                    <p className="row-rewards">
-                      <Check size={12} /> Válido por 30 dias
-                    </p>
                   </div>
                 </div>
               </div>
             </div>
-
             <div className="area-button">
               <div className="button-create">
                 <button>

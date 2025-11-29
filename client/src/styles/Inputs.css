@@ -1,23 +1,40 @@
-.title-input{
-    display: flex;
-    gap: 5px;
+.box-input{
+  margin-bottom: 10px;
 }
-.icon-input{
-    width: 20px;
+.title-input {
+  display: flex;
+  gap: 5px;
 }
-.text-title-input{
-    color: black;
-    font-size: 0.9em;
-    font-weight: 500;
-
+.icon-input {
+  width: 20px;
+  color: #cbd5e1;
 }
-input{
-    width: 100%;
-    height: 40px;
-    margin-bottom: 20px;
-    padding: 0px 5px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1em;
-    border: 1px solid #e4e4e7;
+.text-title-input {
+  color: #cbd5e1;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+input {
+  width: 100%;
+  height: 40px;
+  padding: 0px 5px;
+  border-radius: 8px;
+  font-size: 1em;
+  border: 1px solid #334155;
+  background-color: #020617;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+input:focus,
+select:focus {
+  border-color: #a855f7; /* Borda fica ROXA */
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2); /* Brilho roxo em volta */
+}
+::placeholder {
+  color: #475569; /* Cinza bem apagado */
+}
+.subtitle-cpf{
+  color: #b3b5b9;
+  font-size: 0.6em;
+  padding-left: 2px;
 }

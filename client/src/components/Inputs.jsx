@@ -7,34 +7,34 @@ const Inputs = ({
   placeholder,
   value,
   onChange,
-  error,
+  req,
 }) => {
   return (
-    <div>
+    <div className="box-input">
       <div className="title-input">
         <div className="icon-input">{Icon}</div>
         <div className="text-title-input">
-          <p>{title}</p>
+          <p>
+            {title } 
+            {req && <span style={{ color: "red" }}> *</span>}
+          </p>
         </div>
       </div>
       <input
-        className={`${error ? "input-error" : ""}`}
         value={value}
         onChange={onChange}
         type={type}
         placeholder={placeholder}
-        style={
-          type === "date"
-            ? {
-                fontFamily: "Poppins",
-                fontSize: "0.9em",
-                color: "#7a797aff",
-                backgroundColor: "white",
-              }
-            : {}
-        }
-        
+        required={req}
       />
+      {title === "CPF" ? (
+        <p className="subtitle-cpf">Necessário para emissão de nota fiscal</p>
+      ) : null}
+      {title === "Data do evento" ? (
+        <p className="subtitle-cpf">
+          Fotos disponíveis para download 2 dias após a data.
+        </p>
+      ) : null}
     </div>
   );
 };

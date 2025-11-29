@@ -68,7 +68,7 @@
     transition: box-shadow 0.2s;
   }
 
-  .btn-header {
+  .btn-header { 
     color: #ffffff;
     display: flex;
     font-size: 0.9em;
