@@ -173,7 +173,7 @@ const CreateEventPage = () => {
                     req={true}
                   />
                   <Inputs
-                    value={whatsapp}
+                    value={numberHouseUser}
                     onChange={setNumberHouseUser}
                     title={"Número"}
                     placeholder={""}
