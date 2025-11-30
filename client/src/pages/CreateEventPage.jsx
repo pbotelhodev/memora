@@ -47,7 +47,7 @@ const CUPONS_VALIDOS = {
 const CreateEventPage = () => {
   /* ========== States ========== */
   //Cupom
-  const [precoOriginal] = useState(99);
+  const [precoOriginal] = useState(99.90.toFixed(2));
   const [precoCupom, setPrecoCupom] = useState(precoOriginal);
   const [cupomAtivo, setCupomAtivo] = useState(0);
   const [descontoCupom, setDescontoCupom] = useState(0);
