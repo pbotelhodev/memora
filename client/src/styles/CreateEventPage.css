@@ -136,13 +136,15 @@
 
 .price-plan {
   font-size: 0.5em;
+  display: flex;
+  flex-direction: column;
   & h1 {
     margin: auto 0px;
+    padding: 0px 10px;
   }
 }
 .cupom-ativo{
-  font-size: 1.3em;
-  padding-right: 5px;
+  font-size: 1.5em;;
   color: #94a3b8;
   text-decoration: line-through
 
