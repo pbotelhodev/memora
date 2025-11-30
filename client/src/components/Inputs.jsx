@@ -11,6 +11,7 @@ const Inputs = ({
   req,
   error,
   cupomAtivo,
+  maxLen
 }) => {
   return (
     <div className="box-input">
@@ -31,6 +32,7 @@ const Inputs = ({
         required={req}
         onBlur={onBlur}
         style={{ borderColor: error === true ? "#EF4444" : "#334155" }}
+        maxLength={title === "Nome da Festa" ? maxLen : null}
       />
       {error === true ? (
         <p className="subtitle-input">

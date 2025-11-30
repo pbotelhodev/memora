@@ -298,6 +298,7 @@ const CreateEventPage = () => {
                   icon={<Pencil size={18} />}
                   type={"text"}
                   req={true}
+                  maxLen={40}
                 />
                 <Inputs
                   value={localEvent}
