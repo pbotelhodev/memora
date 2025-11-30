@@ -118,7 +118,7 @@ const CreateEventPage = () => {
     if (cupom.length > 0) {
       validarCupom(cupom);
     } else {
-      setPrecoCupom(99.9);
+      setPrecoCupom(precoOriginal);
       setCupomAtivo(0);
     }
   };
@@ -169,7 +169,6 @@ const CreateEventPage = () => {
       setPrecoCupom(precoFinal.toFixed(2));
     } else {
       setCupomAtivo(2);
-      console.log(cupomAtivo);
       setDescontoCupom(0);
       setPrecoCupom(precoOriginal)
     }
