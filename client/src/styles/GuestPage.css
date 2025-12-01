@@ -9,6 +9,15 @@ html {
   /* Garante que o fundo do corpo seja o mesmo do app quando centralizado */
   background-color: #0f172a;
 }
+button,
+a,
+input,
+select,
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  outline: none; /* Remove a borda de foco que aparece às vezes no desktop */
+}
 
 /* 1. CONTAINER BASE (Contém tudo) */
 .container-guest {
@@ -98,6 +107,12 @@ html {
 
 .nav-item.active {
   color: #a855f7;
+  background-color: transparent;
+  outline: none;
+}
+
+*:focus {
+  outline: none; /* Remove a borda padrão que aparece às vezes */
 }
 
 /* ===== 5. CONTEÚDO PRINCIPAL (MAIN) ===== */
@@ -219,6 +234,16 @@ html {
     left: 50%;
     transform: translateX(-50%);
     right: auto;
+  }
+  .camera-controles-strip {
+    width: 430px;
+    display: flex;
+    margin: 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    position: absolute;
+    bottom: 0px;
+    left: 0;
   }
 
   /* Ajustes de fonte para desktop */
