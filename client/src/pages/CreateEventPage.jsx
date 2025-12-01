@@ -22,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 
 //Servidor
-const API_URL = "http://localhost:5000";
+const API_URL = " https://hypogeous-uninquisitive-ally.ngrok-free.dev";
 
 //Criptografia
 import { customAlphabet } from "nanoid";
