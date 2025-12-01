@@ -27,6 +27,8 @@ import Footer from "../components/Footer";
 import Inputs from "../components/Inputs";
 import PaymentModal from "../components/PaymentModal";
 import Loading from "../components/Loading";
+
+//Styles
 import "../styles/CreateEventPage.css";
 import LogoImg from "../assets/logo-memora.png";
 
@@ -132,7 +134,6 @@ const CreateEventPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
 
     // 1. VALIDAÇÃO DE SEGURANÇA (O Porteiro)
     if (
@@ -208,9 +209,9 @@ const CreateEventPage = () => {
             nome: nameUser,
             cpf: cpfUser,
             email: emailUser,
-            phone: whatsapp, 
-            cep: cepUser, 
-            numero: numberHouseUser
+            phone: whatsapp,
+            cep: cepUser,
+            numero: numberHouseUser,
           },
         });
 
