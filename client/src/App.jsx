@@ -2,9 +2,9 @@
 import "./styles/global.css";
 import HomePage from "./pages/HomePage";  
 import CreateEventPage from './pages/CreateEventPage'
-import SucessPage from './pages/SucessPage'
 import { Routes, Route} from "react-router-dom";
 import { ROUTES } from "./routes";
+import DashboardPage from "./pages/DashboardPage";
 
 
 function App() {
@@ -16,9 +16,9 @@ function App() {
       <Route path={ROUTES.HOME} element={<HomePage />} />
       {/* Rota 2: Criar Festa */}
       <Route path={ROUTES.CREATE_PARTY} element={<CreateEventPage />} />
-      {/* Rota 1: Pagina inicial */}
-      <Route path={ROUTES.SUCESS} element={<SucessPage />} />
-      {/* Rota 1: Pagina inicial */}
+      {/* Rota 3: Dashboard do evento*/}
+      <Route path={ROUTES.SUCESS} element={<DashboardPage />} />
+     
       
     </Routes>
   );

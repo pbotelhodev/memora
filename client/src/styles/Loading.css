@@ -1,0 +1,56 @@
+/* O Fundo que bloqueia a tela */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(2, 6, 23, 0.9); /* Slate-950 quase opaco */
+  backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000; /* Acima de tudo */
+  animation: fadeIn 0.3s ease;
+}
+
+/* O Spinner (A Roda) */
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.1); /* Base cinza transparente */
+  border-radius: 50%;
+  
+  /* As cores que giram */
+  border-top-color: #A855F7; /* Roxo */
+  border-left-color: #06B6D4; /* Cyan */
+  
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3); /* Glow Roxo */
+}
+
+/* O Texto Piscando */
+.loading-text {
+  margin-top: 20px;
+  color: #FFFFFF;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Animações */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

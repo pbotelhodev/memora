@@ -1,0 +1,413 @@
+/* ==========================================================================
+   BASE (MOBILE FIRST)
+   Estes estilos aplicam-se a TODOS os dispositivos (Celular por padrão)
+   ========================================================================== */
+
+/* Container Geral */
+.dashboard-container {
+  background-color: #0f172a; /* Slate-900 */
+  min-height: 100vh;
+  color: white;
+  padding-top: 10px; /* Espaço para o Header Fixo */
+  padding-bottom: px;
+}
+.header-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* Área do Conteúdo */
+.dashboard-content {
+  width: 90%; /* Mobile usa 90% da largura */
+  max-width: 1200px;
+  margin: 20px auto;
+}
+
+/* --- CABEÇALHO DO PERFIL (HEADER) --- */
+.header-profile-area {
+  max-width: 1280px;
+  margin: 10px auto;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.welcome-text {
+  display: block; /* No celular escondemos o texto para economizar espaço */
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.avatar-circle {
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #a855f7, #06b6d4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.btn-logout {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 5px;
+}
+
+/* --- BARRA DE STATUS --- */
+.event-status-bar {
+  display: flex;
+  flex-direction: column; /* Empilhado no celular */
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.event-info p {
+  margin: 0 0 5px 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+.event-info h1 {
+  font-size: 1.8rem;
+  background: linear-gradient(90deg, #ffffff, #cbd5e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.status-badge {
+  align-self: flex-start; /* Alinha na esquerda no mobile */
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+/* --- GRID PRINCIPAL (Layout) --- */
+.dashboard-grid {
+  display: flex;
+  flex-direction: column; /* Um card embaixo do outro no celular */
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+/* Estilo Genérico dos Cards */
+.dash-card {
+  background-color: #1e293b; /* Slate-800 */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+/* --- CARD 1: ACESSO (QR Code) --- */
+.access-card {
+  text-align: center;
+}
+.access-card h3 {
+  color: white;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.qr-box {
+  background: white;
+  padding: 10px;
+  border-radius: 15px;
+  display: inline-block;
+  margin-bottom: 15px;
+}
+.qr-box img {
+  width: 140px;
+  height: 140px;
+  display: block;
+}
+
+.link-box {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-bottom: 15px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: #a855f7;
+  cursor: pointer;
+}
+
+.btn-outline {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #a855f7;
+  background: transparent;
+  color: #a855f7;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* --- CARD 2: AÇÕES --- */
+.actions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  border-radius: 15px;
+  border: none;
+  text-align: left;
+  width: 100%;
+}
+
+.btn-tv {
+  background: linear-gradient(90deg, #a855f7 0%, #06b6d4 100%);
+  color: white;
+}
+
+.btn-share {
+  background-color: #065f46;
+  color: #34d399;
+  border: 1px solid #059669;
+}
+
+.action-text h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.action-text p {
+  margin: 3px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+/* ESTADO BLOQUEADO (Paywall) */
+.locked-state {
+  padding: 20px 0;
+  text-align: center;
+}
+.locked-icon {
+  background: rgba(239, 68, 68, 0.1);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+}
+
+/* --- GALERIA --- */
+.gallery-section h2 {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+}
+.count-badge {
+  font-size: 0.8rem;
+  background: #334155;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 Colunas no celular */
+  gap: 10px;
+}
+
+.photo-item {
+  position: relative;
+  aspect-ratio: 9/16;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #334155;
+}
+
+.photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.delete-overlay {
+  display: none;
+} /* No mobile não tem hover */
+
+.btn-delete-mobile {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(239, 68, 68, 0.8);
+  color: white;
+  border: none;
+  padding: 5px;
+  border-radius: 50%;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: #1e293b;
+  border-radius: 20px;
+  border: 1px dashed #334155;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   DESKTOP (Override)
+   Aplica-se apenas quando a tela for maior que 1024px
+   ========================================================================== */
+
+@media (min-width: 1024px) {
+  /* Ajuste de Conteúdo */
+  .dashboard-content {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 10px 15px;
+  }
+
+  /* Header */
+
+  .welcome-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  } /* Mostra o texto de Olá */
+
+  /* Status Bar */
+  .event-status-bar {
+    flex-direction: row; /* Fica lado a lado */
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .event-info h1 {
+    font-size: 2.5rem;
+  }
+  .status-badge {
+    align-self: auto;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+  }
+
+  /* Grid Principal */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* Coluna da esquerda menor, direita maior */
+    gap: 30px;
+  }
+
+  /* Cards */
+  .dash-card {
+    padding: 30px;
+  }
+
+  .qr-box img {
+    width: 180px;
+    height: 180px;
+  }
+
+  .btn-action {
+    padding: 30px;
+    gap: 20px;
+    transition: transform 0.2s;
+  }
+  .btn-action:hover {
+    transform: translateY(-5px);
+    cursor: pointer;
+  }
+  .action-text h3 {
+    font-size: 1.3rem;
+  }
+
+  /* Galeria */
+  .gallery-grid {
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(180px, 1fr)
+    ); /* Responsivo inteligente */
+    gap: 20px;
+  }
+
+  /* Hover Effects (Só existem no desktop com mouse) */
+  .delete-overlay {
+    display: flex; /* Volta a aparecer */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .photo-item:hover .delete-overlay {
+    opacity: 1;
+    cursor: pointer;
+  }
+
+  .btn-delete {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .btn-delete-mobile {
+    display: none;
+  } /* Esconde o botão fixo do mobile */
+}
