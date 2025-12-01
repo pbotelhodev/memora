@@ -93,15 +93,40 @@ const GuestPage = () => {
   }, [slug]);
 
   useEffect(() => {
+    let currentStream = null; // Guarda o stream para a função de limpeza
+
     if (abaAtiva === "camera") {
-      iniciarCamera();
-    } else {
-      // Se saiu da aba da câmera, desliga a luzinha da câmera pra economizar bateria
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-        setStream(null);
-      }
+      // 1. Inicia a câmera (usando o facingMode)
+      const setupCamera = async () => {
+        try {
+          const mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facingMode },
+          });
+
+          currentStream = mediaStream; // Guarda o stream recém-criado
+          setStream(mediaStream); // Atualiza o estado
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+            videoRef.current.play(); // NOVIDADE: Força o play no celular, se permitido
+          }
+        } catch (err) {
+          console.error("Erro ao acessar câmera:", err);
+          setErro(true); // Pode ser útil para mostrar uma tela de erro na câmera
+        }
+      };
+
+      setupCamera();
     }
+
+    // 2. A FUNÇÃO DE LIMPEZA (RODA AO SAIR DA ABA OU MUDAR O FACINGMODE)
+    return () => {
+      if (currentStream) {
+        currentStream.getTracks().forEach((track) => track.stop());
+        setStream(null);
+        console.log("Câmera desligada.");
+      }
+    };
   }, [abaAtiva, facingMode]);
 
   //Returns
