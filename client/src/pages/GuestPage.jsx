@@ -154,7 +154,7 @@ const GuestPage = () => {
               className="video-preview"
             />
 
-            {/* NOVIDADE: A FAIXA DE CONTROLES NO RODAPÉ */}
+            
             <div className="camera-controles-strip">
               {/* Botão Galeria (1) - Esquerda */}
               <input
@@ -165,7 +165,7 @@ const GuestPage = () => {
                 onChange={handleArquivoGaleria}
               />
               <label htmlFor="galeria-input" className="botao-galeria">
-                <Image size={40} />
+                <Image size={35} />
               </label>
 
               {/* Botão Disparo (2) - Central (Função para capturar a foto de fato) */}
@@ -175,7 +175,7 @@ const GuestPage = () => {
 
               {/* Botão Virar Câmera (3) - Direita */}
               <button className="botao-flip" onClick={toggleCameraFacing}>
-                <RefreshCw size={40} />
+                <RefreshCw size={35} />
               </button>
             </div>
           </div>

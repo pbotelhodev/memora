@@ -132,8 +132,8 @@ html {
 
 /* O Botão de Disparo (Centralizado e Flutuante com Flexbox) */
 .botao-disparo {
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   border: 4px solid white;
   background: transparent;
@@ -144,13 +144,13 @@ html {
   z-index: 5;
   padding: 0;
   /* Centraliza horizontalmente e separa o botão do vídeo/navbar */
-  margin: 1rem auto;
+  margin: 15px auto;
 }
 
 /* O Miolo do Botão */
 .botao-disparo-interno {
-  width: 70px;
-  height: 70px;
+  width: 60px;
+  height: 60px;
   background-color: white;
   border-radius: 50%;
   transition: all 0.2s ease;
@@ -162,15 +162,11 @@ html {
 }
 .camera-controles-strip {
   width: 100%;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1rem; /* Diminuído para 1rem nas laterais */
   position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 0px;
 }
 .input-invisivel {
   display: none !important;
