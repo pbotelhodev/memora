@@ -13,9 +13,9 @@
   justify-content: center;
   box-sizing: border-box;
   min-height: 65px;
-  padding: 23px 15px;
+  padding: 20px;
   & img {
-    width: 110px;
+    width: 120px;
     height: auto;
   }
 }
@@ -23,56 +23,53 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh; /* Garante altura mínima de 100% da tela */
+  background-color: #0f172a;
+  color: white;
 }
 .main {
   flex: 1;
-  width: 100%;
   padding: 20px 0px;
-  background-color: #0f172a;
-  color: #0f172a;
 }
 .container {
   width: 85%;
-  margin: 0px auto;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding: 0px 15px;
   gap: 30px;
 }
+
+/* Títulos */
 .title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.main-title {
   text-align: center;
-  font-size: 1.2em;
+  margin-bottom: 20px;
+}
+.main-title h1 {
+  font-size: 1.8rem;
+  margin: 0 0 10px 0;
 }
 .main-subtitle {
-  text-align: center;
-  font-size: 1.1em;
-  width: 100%;
-  margin: 0px auto;
+  font-size: 1rem;
   color: #94a3b8;
 }
 
 /* ========== Cards ========== */
+.form {
+  width: 100%;
+}
+
 .card-cadastro {
   display: flex;
-  width: 100%;
-  display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 20px;
 }
 .card-register {
   background: #1e293b;
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 20px;
-  padding: 30px;
+  padding: 25px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 .title-card {
-  color: #ffffff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 15px;
   margin-bottom: 20px;
@@ -80,17 +77,18 @@
   align-items: center;
   gap: 10px;
 }
+.text-title {
+  font-weight: 600;
+  font-size: 1.3em;
+}
 .subtitle-card {
   font-size: 0.8em;
   padding-bottom: 20px;
+  margin-bottom: 20px;
 }
-.title-icon {
-  padding-right: 10px;
-}
-.text-title {
-  font-weight: 600;
-  color: white;
-  font-size: 1.3em;
+.input-duo {
+  display: flex;
+  gap: 15px;
 }
 
 /*  ====== Button ===== */
@@ -143,19 +141,59 @@
     padding: 0px 10px;
   }
 }
-.cupom-ativo{
-  font-size: 1.5em;;
+.cupom-ativo {
+  font-size: 1.5em;
   color: #94a3b8;
-  text-decoration: line-through
-
+  text-decoration: line-through;
 }
-.subtitle-promo{
+.subtitle-promo {
   text-align: end;
   color: #b3b5b9;
   font-size: 0.6em;
   padding: 5px;
 }
+/* Botões de Seleção */
+.method-btn {
+  flex: 1;
+  width: 50%;
+  border: 1px solid red;
+  background-color: #020617;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
 
+/* Quando selecionado */
+.method-btn.active {
+  background-color: rgba(168, 85, 247, 0.1); /* Roxo transparente */
+  border-color: #a855f7;
+  color: white;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+}
+
+.method-btn:hover {
+  border-color: #a855f7;
+}
+
+/* Animação do form */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .button-create {
   width: 100%;
 
@@ -183,6 +221,7 @@
 
    ========================================== */
 @media (min-width: 1024px) {
+  
   .main {
     padding: 30px 0px;
   }

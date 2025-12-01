@@ -38,63 +38,113 @@ const asaasApi = axios.create({
 // --- ROTA DE PAGAMENTO PIX ---
 app.post("/criar-pagamento", async (req, res) => {
   try {
-    // 1. Recebe os dados que vieram do React
-    const { nome, cpf, email, valor } = req.body;
+    // 1. Recebe e Blinda os dados
+    const { nome, cpf, email, valor, tipo, card, cep, numero, phone } =
+      req.body;
+    //Log de conferência
+    console.log("--> CHEGOU NO SERVER:", { nome, tipo, cep });
+
+    // Garante que nada é undefined antes de usar .replace
+    const cpfString = cpf || "";
+    const cepString = cep || "39400000"; // Valor padrão se vier vazio
+    const phoneString = phone || "99999999999"; // Valor padrão
+    const numeroString = numero || "SN";
+
+    // Limpa os dados com segurança
+    const cpfLimpo = cpfString.replace(/\D/g, "");
+    const cepLimpo = cepString.replace(/\D/g, "");
+    const phoneLimpo = phoneString.replace(/\D/g, "");
+
+    console.log("--> Pedido recebido:", { nome, valor, tipo, cep: cepLimpo });
+
+    // --- 1. Se for GRÁTIS ---
     if (valor <= 0) {
-      console.log("Evento Gratuito detectado via Cupom!");
       return res.json({
         sucesso: true,
-        isFree: true, // Avisa o frontend que foi de graça
-        pagamentoId: "FREE_" + Date.now(), // ID falso pra não quebrar
+        isFree: true,
+        pagamentoId: "FREE_" + Date.now(),
       });
     }
-    console.log("--> Recebi pedido de Pix para:", nome, "| R$", valor);
 
-    // 2. CRIAR CLIENTE NO ASAAS
-    // O Asaas exige que a gente cadastre a pessoa antes de cobrar
-    const respostaCliente = await asaasApi.post("/customers", {
+    // --- 2. Criar Cliente no Asaas ---
+    const clienteResponse = await asaasApi.post("/customers", {
       name: nome,
-      cpfCnpj: cpf,
+      cpfCnpj: cpfLimpo,
       email: email,
+      notificationDisabled: false,
     });
+    const clienteId = clienteResponse.data.id;
 
-    const idClienteAsaas = respostaCliente.data.id;
-    console.log("1. Cliente criado no Asaas:", idClienteAsaas);
-
-    // 3. GERAR O PIX
-    const respostaCobranca = await asaasApi.post("/payments", {
-      customer: idClienteAsaas,
-      billingType: "PIX",
+    // --- 3. Montar Objeto de Cobrança ---
+    let cobrancaData = {
+      customer: clienteId,
+      billingType: tipo, // 'PIX' ou 'CREDIT_CARD'
       value: valor,
-      dueDate: new Date().toISOString().split("T")[0], // Vence hoje
-      description: "Plano Memora - Infinty",
-    });
+      dueDate: new Date().toISOString().split("T")[0],
+      description: "Plano Memora Infinity",
+    };
 
-    const idCobranca = respostaCobranca.data.id;
-    console.log("2. Cobrança criada:", idCobranca);
+    // --- 4. SE FOR CARTÃO ---
+    if (tipo === "CREDIT_CARD") {
+      // Validação extra de segurança para o cartão
+      if (!card || !card.holderName || !card.number) {
+        return res
+          .status(400)
+          .json({ sucesso: false, erro: "Dados do cartão incompletos" });
+      }
 
-    // 4. PEGAR O QR CODE (Imagem e Código)
-    const respostaQrCode = await asaasApi.get(
-      `/payments/${idCobranca}/pixQrCode`
-    );
+      cobrancaData = {
+        ...cobrancaData,
+        creditCard: {
+          holderName: card.holderName,
+          number: card.number,
+          expiryMonth: card.expiryMonth,
+          expiryYear: card.expiryYear, // Já corrigimos o ano 2020 antes
+          ccv: card.ccv,
+        },
+        creditCardHolderInfo: {
+          name: nome,
+          email: email,
+          cpfCnpj: cpfLimpo,
+          postalCode: cepLimpo,
+          addressNumber: numeroString,
+          phone: phoneLimpo,
+        },
+      };
+    }
 
-    console.log("3. QR Code obtido!");
+    // --- 5. ENVIAR ---
+    const cobrancaResponse = await asaasApi.post("/payments", cobrancaData);
+    const idCobranca = cobrancaResponse.data.id;
+    const status = cobrancaResponse.data.status;
 
-    // 5. DEVOLVER TUDO PRO SEU SITE
-    res.json({
-      sucesso: true,
-      pagamentoId: idCobranca,
-      pixCopiaCola: respostaQrCode.data.payload,
-      qrCodeImagem: respostaQrCode.data.encodedImage,
-    });
+    // --- 6. RESPOSTA ---
+    if (tipo === "PIX") {
+      const qrCodeResponse = await asaasApi.get(
+        `/payments/${idCobranca}/pixQrCode`
+      );
+      res.json({
+        sucesso: true,
+        tipo: "PIX",
+        pagamentoId: idCobranca,
+        pixCopiaCola: qrCodeResponse.data.payload,
+        qrCodeImagem: qrCodeResponse.data.encodedImage,
+      });
+    } else {
+      res.json({
+        sucesso: true,
+        tipo: "CREDIT_CARD",
+        pagamentoId: idCobranca,
+        status: status,
+      });
+    }
   } catch (error) {
-    console.error(
-      "ERRO NO SERVIDOR:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("ERRO ASAAS:", error.response?.data || error.message);
     res.status(500).json({
       sucesso: false,
-      erro: "Erro ao falar com o Asaas",
+      erro:
+        error.response?.data?.errors?.[0]?.description ||
+        "Erro no processamento",
     });
   }
 });

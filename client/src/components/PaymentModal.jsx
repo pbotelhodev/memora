@@ -1,62 +1,251 @@
-import React, { useState } from "react";
-import { Copy, X, CheckCircle } from "lucide-react"; // Ícones bonitos
-import "../styles/PaymentModal.css"; // Já vamos criar esse CSS
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  CreditCard,
+  QrCode,
+  Copy,
+  CheckCircle,
+  Loader2,
+  User,
+  CalendarDays,
+  Lock,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../services/supabaseClient";
+import Inputs from "./Inputs"; // Reutilizando seu componente de input
+import { maskCardNumber, maskCardExpiry, maskCVV } from "../utils/mask"; // Suas máscaras
+import "../styles/PaymentModal.css";
+
+// URL da API (Ngrok)
+const API_URL = "https://hypogeous-uninquisitive-ally.ngrok-free.dev";
 
 const PaymentModal = ({ isOpen, onClose, paymentData }) => {
   const navigate = useNavigate();
+
+  // --- STATES ---
+  const [method, setMethod] = useState("PIX"); // PIX ou CARD
+  const [loading, setLoading] = useState(false);
+
+  // States do Pix
+  const [pixResult, setPixResult] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  // States do Cartão
+  const [cardName, setCardName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+
+  // --- CORREÇÃO BUG 1: RESETAR AO ABRIR ---
+  useEffect(() => {
+    if (isOpen) {
+      setPixResult(null); // Limpa o QR Code antigo
+      setMethod("PIX"); // Reseta para a aba inicial
+      setLoading(false);
+      // Limpa formulário do cartão
+      setCardName("");
+      setCardNumber("");
+      setCardExpiry("");
+      setCardCvv("");
+    }
+  }, [isOpen]);
 
   if (!isOpen || !paymentData) return null;
 
-  // Função para copiar o código Pix
-  const handleCopy = () => {
-    navigator.clipboard.writeText(paymentData.pixCopiaCola);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000); // Reseta o texto do botão em 2s
-  };
+  // --- FUNÇÃO DE PAGAMENTO ---
+  const handleConfirmPayment = async () => {
+    setLoading(true);
 
-  // --- ÁREA DE CONTEÚDO DINÂMICO (FUTURO PROOF) ---
-  const renderContent = () => {
-    switch (paymentData.type) {
-      case "PIX":
-        return (
-          <div className="pix-content">
-            <div className="qr-container">
-              {/* Imagem que vem do Asaas */}
-              <img
-                src={`data:image/png;base64,${paymentData.qrCodeImagem}`}
-                alt="QR Code Pix"
-              />
-            </div>
+    try {
+      // Payload base
+      const payload = {
+        nome: paymentData.cliente.nome,
+        cpf: paymentData.cliente.cpf,
+        email: paymentData.cliente.email,
+        valor: paymentData.valor,
+        tipo: method,
+        cep: paymentData.cliente.cep, // <--- O servidor precisa disso!
+        numero: paymentData.cliente.numero, // <--- E disso!
+        phone: paymentData.cliente.phone, // <--- E disso!
+      };
+      console.log("ENVIANDO PARA O SERVIDOR:", payload);
+      // Se for cartão, adiciona os dados extras
+      if (method === "CREDIT_CARD") {
+        payload.card = {
+          holderName: cardName,
+          number: cardNumber.replace(/\s/g, ""), // Remove espaços pra enviar
+          expiryMonth: cardExpiry.split("/")[0],
+          expiryYear: cardExpiry.split("/")[1],
+          ccv: cardCvv,
+        };
+      }
 
-            <p className="instruction">
-              Abra o app do seu banco e escaneie o código ou use o copia e cola:
-            </p>
+      const response = await fetch(`${API_URL}/criar-pagamento`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-            <div className="copy-box">
-              <input readOnly value={paymentData.pixCopiaCola} />
-              <button onClick={handleCopy} className={copied ? "success" : ""}>
-                {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
-                {copied ? "Copiado!" : "Copiar"}
-              </button>
-            </div>
-          </div>
-        );
+      const json = await response.json();
 
-      case "CREDIT_CARD":
-        return (
-          <div className="card-content">
-            {/* FUTURO: Aqui vai entrar o form de cartão ou msg de sucesso */}
-            <h3>Pagamento via Cartão</h3>
-            <p>Em breve...</p>
-          </div>
-        );
+      if (json.sucesso) {
+        // CENÁRIO PIX (Mostra QR Code)
+        if (json.tipo === "PIX") {
+          await salvarIdPagamento(json.pagamentoId);
+          setPixResult(json);
+        }
 
-      default:
-        return <p>Método desconhecido.</p>;
+        // CENÁRIO CARTÃO (Redireciona ou Avisa)
+        else if (json.tipo === "CREDIT_CARD") {
+          await salvarIdPagamento(json.pagamentoId);
+
+          if (json.status === "CONFIRMED") {
+            alert("Pagamento Aprovado! 🎉");
+            navigate(`/painel/${paymentData.slug}`);
+          } else {
+            alert(
+              "Pagamento em análise. Assim que aprovar, você receberá um e-mail."
+            );
+            // Pode fechar o modal ou limpar
+            onClose();
+          }
+        }
+      } else {
+        alert("Erro no pagamento: " + json.erro);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro de conexão com o servidor.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Função auxiliar pra salvar o ID no Supabase
+  const salvarIdPagamento = async (idPagamento) => {
+    await supabase
+      .from("festas")
+      .update({ asaas_id: idPagamento })
+      .eq("slug", paymentData.slug);
+  };
+
+  // --- RENDER: SELEÇÃO E FORMULÁRIO ---
+  const renderSelection = () => (
+    <>
+      <div className="method-tabs">
+        <button
+          className={`tab-btn ${method === "PIX" ? "active" : ""}`}
+          onClick={() => setMethod("PIX")}
+        >
+          <QrCode size={20} /> PIX
+        </button>
+        <button
+          className={`tab-btn ${method === "CREDIT_CARD" ? "active" : ""}`}
+          onClick={() => setMethod("CREDIT_CARD")}
+        >
+          <CreditCard size={20} /> Cartão
+        </button>
+      </div>
+
+      {/* --- FORMULÁRIO DO CARTÃO --- */}
+      {method === "CREDIT_CARD" && (
+        <div className="card-form-container" style={{ textAlign: "left" }}>
+          <Inputs
+            label="Número do Cartão"
+            placeholder="0000 0000 0000 0000"
+            icon={<CreditCard size={18} />}
+            value={cardNumber}
+            onChange={(e) => setCardNumber(maskCardNumber(e.target.value))}
+          />
+          <Inputs
+            label="Nome Impresso"
+            placeholder="Como no cartão"
+            icon={<User size={18} />}
+            value={cardName}
+            onChange={(e) => setCardName(e.target.value.toUpperCase())}
+          />
+          <div style={{ display: "flex", gap: "10px" }}>
+            <Inputs
+              label="Validade"
+              placeholder="MM/AAAA"
+              icon={<CalendarDays size={18} />}
+              value={cardExpiry}
+              onChange={(e) => setCardExpiry(maskCardExpiry(e.target.value))}
+            />
+            <Inputs
+              label="CVV"
+              placeholder="123"
+              icon={<Lock size={18} />}
+              type="tel"
+              maxLen={4}
+              value={cardCvv}
+              onChange={(e) => setCardCvv(maskCVV(e.target.value))}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* --- INFO DO PIX --- */}
+      {method === "PIX" && (
+        <div className="pix-info">
+          <p>Aprovação imediata via QR Code. O método mais rápido.</p>
+        </div>
+      )}
+
+      <button
+        className="btn-pay-confirm"
+        onClick={handleConfirmPayment}
+        disabled={loading}
+      >
+        {loading ? (
+          <Loader2 className="spin" />
+        ) : (
+          `Pagar R$ ${paymentData.valor}`
+        )}
+      </button>
+    </>
+  );
+
+  // --- RENDER: RESULTADO DO PIX ---
+  const renderPixResult = () => (
+    <div className="pix-result">
+      <img
+        src={`data:image/png;base64,${pixResult.qrCodeImagem}`}
+        alt="QR Code"
+        style={{ width: "180px", display: "block", margin: "0 auto 20px" }}
+      />
+
+      <div className="copy-box">
+        <input readOnly value={pixResult.pixCopiaCola} />
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(pixResult.pixCopiaCola);
+            setCopied(true);
+          }}
+        >
+          {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
+        </button>
+      </div>
+
+      <button
+        className="btn-success"
+        onClick={() => navigate(`/painel/${paymentData.slug}`)}
+        style={{
+          marginTop: "20px",
+          width: "100%",
+          padding: "15px",
+          background: "#10B981",
+          border: "none",
+          color: "white",
+          borderRadius: "10px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        Já fiz o pagamento
+      </button>
+    </div>
+  );
 
   return (
     <div className="modal-overlay">
@@ -66,50 +255,11 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
         </button>
 
         <div className="modal-header">
-          <h2>Pagamento Pendente</h2>
-          <p>Sua festa está reservada! Finalize para liberar.</p>
+          <h2>{pixResult ? "Escaneie para Pagar" : "Finalizar Compra"}</h2>
+          <p>Sua festa: {paymentData.slug}</p>
         </div>
 
-        {/* 1. PRIMEIRO MOSTRA O QR CODE */}
-        {renderContent()}
-
-        {/* 2. DEPOIS MOSTRA OS BOTÕES DE AÇÃO */}
-        <div
-          className="modal-actions"
-          style={{
-            marginTop: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-          }}
-        >
-          <button
-            onClick={() => navigate(`/painel/${paymentData.slug}`)}
-            className="btn-primary"
-            style={{ width: "100%", justifyContent: "center" }} // Ajuste pra centralizar texto
-          >
-            Já fiz o pagamento! 🚀
-          </button>
-
-          <button
-            onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#64748B",
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
-          >
-            Fechar e pagar depois
-          </button>
-        </div>
-
-        <div className="modal-footer">
-          <p className="security-note">
-            🔒 Após o pagamento, a liberação é automática em segundos.
-          </p>
-        </div>
+        {pixResult ? renderPixResult() : renderSelection()}
       </div>
     </div>
   );

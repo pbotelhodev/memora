@@ -1,6 +1,4 @@
-//Imports Tools
 import { useEffect, useState } from "react";
-import { ROUTES } from "../routes";
 import {
   PartyPopper,
   User,
@@ -15,20 +13,9 @@ import {
   Smartphone,
   Ticket,
 } from "lucide-react";
-
 import { useNavigate } from "react-router-dom";
-
-//Database
 import { supabase } from "../services/supabaseClient";
-
-//Servidor
-const API_URL = " https://hypogeous-uninquisitive-ally.ngrok-free.dev";
-
-//Criptografia
 import { customAlphabet } from "nanoid";
-const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwxyz", 10);
-
-//validators
 import { maskCPF, maskPhone, maskDate, maskCEP } from "../utils/mask";
 import {
   validarCPF,
@@ -36,20 +23,15 @@ import {
   validarData,
   validarCEP,
 } from "../utils/validators";
-
-//import componets
 import Footer from "../components/Footer";
 import Inputs from "../components/Inputs";
 import PaymentModal from "../components/PaymentModal";
 import Loading from "../components/Loading";
-
-//Imports styles
 import "../styles/CreateEventPage.css";
-
-//Imports Images
 import LogoImg from "../assets/logo-memora.png";
 
-/* Banco de dados provisório */
+const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwxyz", 10);
+
 const CUPONS_VALIDOS = {
   TESTE10: 10,
   TESTE15: 15,
@@ -60,230 +42,73 @@ const CUPONS_VALIDOS = {
 
 const CreateEventPage = () => {
   const navigate = useNavigate();
-  /* ========== States ========== */
 
-  //validators
+  // --- STATES ---
   const [cpfError, setCpfError] = useState(false);
   const [telError, setTelError] = useState(false);
   const [dataError, setDataError] = useState(false);
   const [cepError, setCepError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  //Cupom
+  // Preço e Cupom
   const [precoOriginal] = useState((99.9).toFixed(2));
   const [precoPromo, setPrecoPromo] = useState(precoOriginal);
   const [cupomAtivo, setCupomAtivo] = useState(0);
   const [descontoCupom, setDescontoCupom] = useState(0);
 
-  //Users Info
+  // Form Data
   const [nameUser, setNameUser] = useState("");
   const [emailUser, setEmailUser] = useState("");
   const [cpfUser, setCpfUser] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [cepUser, setCepUser] = useState("");
   const [numberHouseUser, setNumberHouseUser] = useState("");
-
   const [titleEvent, setTitleEvent] = useState("");
   const [dateEvent, setDateEvent] = useState("");
   const [localEvent, setLocalEvent] = useState("");
   const [cupomUser, setCupomUser] = useState("");
 
-  //Payment
+  // Modal Control
   const [modalOpen, setModalOpen] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
-  /* =========== Masks ============ */
+
+  // --- HANDLERS (Máscaras e Validações) ---
   const handleCpfChange = (e) => {
     setCpfUser(maskCPF(e.target.value));
     setCpfError(false);
   };
-
   const handlePhoneChange = (e) => {
     setWhatsapp(maskPhone(e.target.value));
     setTelError(false);
   };
-
   const handleDateChange = (e) => {
     setDateEvent(maskDate(e.target.value));
     setDataError(false);
   };
-
   const handleCepChange = (e) => {
     setCepUser(maskCEP(e.target.value));
     setCepError(false);
   };
 
-  //Validators Function
   const handleCpfBlur = () => {
-    if (cpfUser.length > 0 && !validarCPF(cpfUser)) {
-      setCpfError(true);
-    }
+    if (cpfUser.length > 0 && !validarCPF(cpfUser)) setCpfError(true);
   };
   const handleTelBlur = () => {
-    if (whatsapp.length > 0 && !validarTelefone(whatsapp)) {
-      setTelError(true);
-    }
+    if (whatsapp.length > 0 && !validarTelefone(whatsapp)) setTelError(true);
   };
   const handleDateBlur = () => {
-    if (dateEvent.length > 0 && !validarData(dateEvent)) {
-      setDataError(true);
-    }
+    if (dateEvent.length > 0 && !validarData(dateEvent)) setDataError(true);
+  };
+  const handleCepBlur = () => {
+    if (cepUser.length > 0 && !validarCEP(cepUser)) setCepError(true);
   };
 
-  const handleCepBlur = () => {
-    if (cepUser.length > 0 && !validarCEP(cepUser)) {
-      setCepError(true);
-    }
-  };
   const handleCupomBlur = (e) => {
     let cupom = e.target.value.trim().toUpperCase();
-    if (cupom.length > 0) {
-      validarCupom(cupom);
-    } else {
+    if (cupom.length > 0) validarCupom(cupom);
+    else {
       setPrecoPromo(precoOriginal);
       setCupomAtivo(0);
-    }
-  };
-  /* =========== Functions =========== */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    setLoading(true);
-
-    // 1. Vaidação de segurança
-    if (
-      cpfError || // <--- ADICIONE ISSO (Impede salvar CPF inválido)
-      telError ||
-      cepError ||
-      dataError ||
-      !nameUser ||
-      !emailUser ||
-      !cpfUser ||
-      !whatsapp ||
-      !cepUser ||
-      !numberHouseUser ||
-      !titleEvent ||
-      !dateEvent
-    ) {
-      alert("Ops! Preencha todos os campos obrigatórios para continuar.");
-      return;
-    }
-
-    try {
-      //2. Formata data para o DB
-      const [dia, mes, ano] = dateEvent.split("/");
-      const dataFormatada = `${ano}-${mes}-${dia}`;
-
-      // 3. Gerar o slug(código) do evento
-      const meuSlug = nanoid();
-
-      // 4. salvar dados no supabase
-
-      const { data, error } = await supabase
-        .from("festas") // Nome da tabela que criamos
-        .insert([
-          {
-            slug: meuSlug,
-            nome_cliente: nameUser,
-            email_cliente: emailUser,
-            cpf_cliente: cpfUser,
-            whatsapp: whatsapp,
-            cep: cepUser,
-            numero_residencia: numberHouseUser,
-            nome_festa: titleEvent,
-            data_festa: dataFormatada,
-            local_festa: localEvent || null,
-            cupom_usado: cupomUser || null, // Se tiver vazio manda null
-            valor_pago: parseFloat(precoPromo),
-            status: "PENDENTE",
-          },
-        ])
-        .select(); // Pede pro banco confirmar o que salvou
-
-      if (error) {
-        throw error; //Se nao salvar no DB joga pro catch
-      }
-      console.log("FESTA SALVA COM SUCESSO!", data);
-      console.log("Deu certo");
-
-      // Aqui você redirecionaria para a tela de Pix ou Painel
-      const dadosPagamento = {
-        nome: nameUser,
-        cpf: cpfUser,
-        email: emailUser,
-        valor: parseFloat(precoPromo),
-      };
-
-      const resposta = await fetch(`${API_URL}/criar-pagamento`, {
-        method: "POST", // Estamos enviando dados
-        headers: {
-          "Content-Type": "application/json", // Avisa que é um JSON
-        },
-        body: JSON.stringify(dadosPagamento), // Transforma os dados em texto pra viajar na internet
-      });
-
-      // Transforma a resposta do servidor em objeto Javascript
-      const jsonPix = await resposta.json();
-
-      if (jsonPix.sucesso) {
-        //Se for de graça
-        if (jsonPix.isFree) {
-          alert("Cupom de 100% aplicado! Sua festa foi liberada.");
-
-          // 1. Atualiza o banco para ATIVO direto (sem esperar webhook)
-          const { error: updateError } = await supabase
-            .from("festas")
-            .update({
-              status: "SISTEMA NO AR", // Já libera
-              asaas_id: jsonPix.pagamentoId,
-            })
-            .eq("slug", meuSlug);
-          if (updateError) {
-            console.error("ERRO AO LIBERAR FESTA GRÁTIS:", updateError);
-            // Se der erro aqui, ele navega pro painel mas o banco continua PENDENTE
-          }
-
-          // 2. Manda pro Painel direto
-          navigate(`/painel/${meuSlug}`);
-          return; // Para por aqui
-        }
-
-        console.log("PIX GERADO!", jsonPix);
-
-        //Se for pago =======================
-
-        const { error: updateError } = await supabase
-          .from("festas")
-          .update({
-            asaas_id: jsonPix.pagamentoId,
-            link_pagamento: jsonPix.pixCopiaCola,
-            link_nota_fiscal: jsonPix.qrCodeImagem,
-          })
-          .eq("slug", meuSlug); // Procura pela festa que acabamos de criar
-
-        if (updateError) {
-          console.error("Erro ao vincular pagamento:", updateError);
-        } else {
-          console.log("Pagamento vinculado com sucesso no banco!");
-        }
-
-        // Segue o fluxo normal
-        setPaymentData({
-          type: "PIX",
-          pixCopiaCola: jsonPix.pixCopiaCola,
-          qrCodeImagem: jsonPix.qrCodeImagem,
-          slug: meuSlug,
-        });
-
-        setModalOpen(true);
-      } else {
-        console.error("Erro no Pix:", jsonPix.erro);
-        alert("Erro ao gerar pagamento: " + jsonPix.erro);
-      }
-    } catch (err) {
-      console.error("Erro ao salvar:", err.message);
-      console.log("deu ruim");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -291,7 +116,6 @@ const CreateEventPage = () => {
     const descCupom = CUPONS_VALIDOS[cupom];
     if (descCupom !== undefined) {
       setCupomAtivo(1);
-      console.log(cupomAtivo);
       setDescontoCupom(descCupom);
       let valorDeDesconto = precoOriginal - precoOriginal * (descCupom / 100);
       let precoFinal =
@@ -304,20 +128,116 @@ const CreateEventPage = () => {
     }
   };
 
+  // --- SUBMIT (Salvar e Abrir Modal) ---
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+
+    // 1. VALIDAÇÃO DE SEGURANÇA (O Porteiro)
+    if (
+      cpfError ||
+      telError ||
+      cepError ||
+      dataError ||
+      !nameUser ||
+      !emailUser ||
+      !cpfUser ||
+      !whatsapp ||
+      !cepUser ||
+      !numberHouseUser ||
+      !titleEvent ||
+      !dateEvent
+    ) {
+      alert("Ops! Verifique os campos em vermelho ou obrigatórios.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // 2. PREPARAÇÃO DOS DADOS
+      // Formata data (DD/MM/AAAA -> YYYY-MM-DD)
+      const [dia, mes, ano] = dateEvent.split("/");
+      const dataFormatada = `${ano}-${mes}-${dia}`;
+
+      // Gera ID único e limpa o valor
+      const meuSlug = nanoid();
+      const valorFinal = parseFloat(precoPromo);
+
+      // Lógica "É Grátis?": Já define o status final aqui pra não precisar de update depois
+      const isFree = valorFinal <= 0;
+      const statusInicial = isFree ? "SISTEMA NO AR" : "PENDENTE";
+      const idPagamentoInicial = isFree ? `FREE_${Date.now()}` : null;
+
+      // 3. SALVAR NO SUPABASE (Apenas uma chamada)
+      const { error } = await supabase.from("festas").insert([
+        {
+          slug: meuSlug,
+          nome_cliente: nameUser,
+          email_cliente: emailUser,
+          cpf_cliente: cpfUser,
+          whatsapp: whatsapp,
+          cep: cepUser,
+          numero_residencia: numberHouseUser,
+          nome_festa: titleEvent,
+          data_festa: dataFormatada,
+          local_festa: localEvent || null,
+          cupom_usado: cupomUser || null,
+          valor_pago: valorFinal,
+          status: statusInicial, // Já entra certo
+          asaas_id: idPagamentoInicial, // Já entra certo se for free
+        },
+      ]);
+
+      if (error) throw error;
+
+      console.log("Festa Salva! ID:", meuSlug);
+
+      // 4. DECISÃO DE FLUXO (Redirecionar ou Cobrar)
+      if (isFree) {
+        // --- CAMINHO VIP (GRÁTIS) ---
+        alert("Cupom 100% aplicado! Festa liberada.");
+        navigate(`/painel/${meuSlug}`);
+      } else {
+        // --- CAMINHO PAGAMENTO (MODAL) ---
+        // Passamos TODOS os dados que o Modal e o Backend precisam (inclusive Endereço pro Cartão)
+        setPaymentData({
+          slug: meuSlug,
+          valor: valorFinal,
+          cliente: {
+            nome: nameUser,
+            cpf: cpfUser,
+            email: emailUser,
+            phone: whatsapp, 
+            cep: cepUser, 
+            numero: numberHouseUser
+          },
+        });
+
+        setModalOpen(true); // Abre o Modal
+      }
+    } catch (err) {
+      console.error("Erro crítico:", err.message);
+      alert("Erro ao conectar com o servidor. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     document.title = "Memora | Criar Festa";
   }, []);
+
   return (
     <div className="body-createEvent">
-      {/* ========== Header ========= */}
       <div className="logo-memora">
         <img src={LogoImg} alt="logo memora" />
       </div>
-      {/* ========== Main ========== */}
+
       <div className="main">
         <div className="container">
           <div className="title-group">
-            <div className="main-title ">
+            <div className="main-title">
               <h1>Crie Sua Festa</h1>
             </div>
             <div className="main-subtitle">
@@ -325,9 +245,10 @@ const CreateEventPage = () => {
               evento
             </div>
           </div>
-          {/* ----- Primeiro Card ----- */}
+
           <form className="form" onSubmit={handleSubmit}>
             <div className="card-cadastro">
+              {/* Card 1: Dados Pessoais */}
               <div className="card-register">
                 <div className="title-card">
                   <div className="title-icon">
@@ -340,6 +261,7 @@ const CreateEventPage = () => {
                 <div className="subtitle-card">
                   <p>Informações do organizador</p>
                 </div>
+
                 <Inputs
                   value={nameUser}
                   onChange={(e) => setNameUser(e.target.value)}
@@ -406,7 +328,7 @@ const CreateEventPage = () => {
                 </div>
               </div>
 
-              {/* ----- Segundo Card ----- */}
+              {/* Card 2: Dados da Festa */}
               <div className="card-register">
                 <div className="title-card">
                   <div className="title-icon">
@@ -419,7 +341,6 @@ const CreateEventPage = () => {
                 <div className="subtitle-card">
                   <p>Detalhes do seu evento</p>
                 </div>
-
                 <Inputs
                   value={titleEvent}
                   onChange={(e) => setTitleEvent(e.target.value)}
@@ -439,6 +360,7 @@ const CreateEventPage = () => {
                   type={"text"}
                   req={false}
                 />
+
                 <div className="input-duo">
                   <Inputs
                     value={dateEvent}
@@ -451,7 +373,6 @@ const CreateEventPage = () => {
                     req={true}
                     error={dataError}
                   />
-
                   <Inputs
                     value={cupomUser}
                     onChange={(e) => setCupomUser(e.target.value)}
@@ -465,6 +386,7 @@ const CreateEventPage = () => {
                     descontoCupom={descontoCupom}
                   />
                 </div>
+
                 <div className="card-register-plan">
                   <div className="area-top">
                     <div className="title-plan">
@@ -485,11 +407,11 @@ const CreateEventPage = () => {
                 )}
               </div>
             </div>
+
             <div className="area-button">
               <div className="button-create">
                 <button>
-                  <CreditCard />
-                  Pagar e Criar Festa
+                  <CreditCard /> Pagar e Criar Festa
                 </button>
               </div>
               <div className="security">
@@ -499,13 +421,14 @@ const CreateEventPage = () => {
           </form>
         </div>
       </div>
+
       <PaymentModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         paymentData={paymentData}
       />
-      {loading && <Loading message="Criando sua festa..." />}
-      {/* ========== Footer ========== */}
+
+      {loading && <Loading message="Processando..." />}
       <Footer />
     </div>
   );
