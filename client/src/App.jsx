@@ -5,6 +5,7 @@ import CreateEventPage from './pages/CreateEventPage'
 import { Routes, Route} from "react-router-dom";
 import { ROUTES } from "./routes";
 import DashboardPage from "./pages/DashboardPage";
+import GuestPage from "./pages/GuestPage";
 
 
 function App() {
@@ -18,8 +19,8 @@ function App() {
       <Route path={ROUTES.CREATE_PARTY} element={<CreateEventPage />} />
       {/* Rota 3: Dashboard do evento*/}
       <Route path={ROUTES.SUCESS} element={<DashboardPage />} />
-     
-      
+      {/* Rota 4: Feed do evento*/}
+      <Route path={ROUTES.FEED} element={<GuestPage />} />
     </Routes>
   );
 }
