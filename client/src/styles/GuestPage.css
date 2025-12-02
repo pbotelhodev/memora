@@ -1,71 +1,87 @@
-/* src/styles/GuestPage.css - CÓDIGO COMPLETO FINAL */
+/* src/styles/GuestPage.css - FINAL E AJUSTADO PELO USUÁRIO */
 
 /* ===== 0. RESET E BASE GERAL ===== */
-
+html,
 body,
-html {
+#root {
+  height: 100%;
+  width: 100%;
   margin: 0;
   padding: 0;
-  /* Garante que o fundo do corpo seja o mesmo do app quando centralizado */
-  background-image: linear-gradient(135deg, #0f172a, #2a0b70);
+  overflow: hidden;
+  background-color: #0f172a;
+}
+* {
+  box-sizing: border-box;
 }
 button,
 a,
 input,
-select,
-* {
+select {
   -webkit-tap-highlight-color: transparent;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-  outline: none; /* Remove a borda de foco que aparece às vezes no desktop */
+  outline: none;
 }
 
+/* ===== 1. TELA DE LOGIN ===== */
 .entry-page-layout {
-  flex: 1; /* Ocupa todo o espaço vertical disponível */
-  display: flex;
-  justify-content: center; /* Centraliza Horizontalmente */
-  align-items: center; /* Centraliza Verticalmente */
-  padding: 2rem;
-}
-
-.entry-form-box {
-  max-width: 430px; /* Limite de largura de celular no PC */
+  height: 100%;
   width: 100%;
-  background-color: #1e293b; /* Slate-800 para dar destaque ao formulário */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background-image: linear-gradient(135deg, #0f172a, #2a0b70);
+  overflow-y: auto;
+}
+.entry-form-box {
+  max-width: 430px;
+  width: 100%;
+  background-color: #1e293b;
   padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   text-align: center;
 }
-
-.logo-title {
-  font-size: 2.5rem; /* Tamanho grande */
-  font-weight: bold;
-  color: #a855f7; /* Roxo principal */
-  margin-bottom: 0.5rem;
-}
-
-.welcome-subtitle {
-  color: #cbd5e1; /* Cinza claro */
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-}
 .header-entry img {
   width: 200px;
   padding: 30px 0;
+}
+.welcome-subtitle {
+  color: #cbd5e1;
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+.nome-festa-destaque {
+  font-weight: bold;
+  color: #a855f7;
+}
+.profile-photo-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  margin: 1rem auto;
+  border: 2px dashed #64748b;
+  border-radius: 50%;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.profile-photo-block:hover {
+  color: #a855f7;
+  border-color: #a855f7;
 }
 .input-guest-name {
   width: 100%;
   padding: 1rem;
   margin-top: 1rem;
   border-radius: 8px;
-  background-color: #0f172a; /* Fundo mais escuro para o input */
+  background-color: #0f172a;
   color: white;
   border: 1px solid #334155;
 }
-.nome-festa-destaque {
-  font-weight: bold;
-}
-/* BOTÃO PRIMÁRIO (CIANO) */
 .btn-entry-primary {
   width: 100%;
   padding: 0.75rem;
@@ -74,100 +90,54 @@ select,
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  background-color: #06b6d4; /* Ciano Vívido */
-  color: #ffffff; /* Texto escuro no botão claro */
+  background-color: #06b6d4;
+  color: #ffffff;
   transition: background-color 0.2s;
 }
-.profile-photo-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
 
-  width: 100px;
-  height: 100px;
-  margin: 1rem auto; /* Centraliza */
-  border: 2px dashed #64748b; /* Borda tracejada sutil */
-  border-radius: 50%;
-
-  color: #94a3b8;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
-}
-
-.profile-photo-block:hover {
-  color: #a855f7; /* Ícone roxo no hover */
-  border-color: #a855f7;
-}
-
-.photo-label {
-  font-size: 0.8rem;
-}
-.btn-entry-primary:hover {
-  background-color: #20d8f7; /* Ciano ligeiramente mais claro no hover */
-}
-
-/* 1. CONTAINER BASE (Com o gradiente Aurora Boreal) */
+/* ===== 2. CONTAINER PRINCIPAL ===== */
 .container-guest {
-  min-height: 100vh;
-  /* Aplicando o gradiente roxo/ciano da identidade visual */
+  height: 100%;
+  width: 100%;
   background-image: linear-gradient(135deg, #0f172a, #2a0b70);
-  background-color: #0f172a; /* Fallback */
-  color: white;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ===== 2. ESTILO DE ERRO (404) ===== */
-.screen {
-  min-height: 100vh;
   background-color: #0f172a;
   color: white;
   display: flex;
-  justify-content: center;
   flex-direction: column;
+}
+.screen {
+  justify-content: center;
+  align-items: center;
 }
 .title-error {
   color: #ef4444;
   font-size: 4em;
   font-weight: bold;
   margin-bottom: 1rem;
-  text-align: center;
 }
-
-.messenger-error {
+.loading-text {
+  text-align: center;
+  margin-top: 50px;
   color: #cbd5e1;
-  font-size: 1.2em;
-  text-align: center;
-  padding: 0 20px;
 }
 
-/* ===== 3. HEADER (Fixo/Sticky) ===== */
-
+/* ===== 3. HEADER E NAV BAR ===== */
 .header-party {
   background-color: rgba(15, 23, 42, 0.95);
   border-bottom: 1px solid #1e293b;
   padding: 1rem;
   text-align: center;
-  position: sticky;
-  top: 0;
   z-index: 10;
+  width: 100%;
+  flex-shrink: 0;
 }
-
 .header-party h1 {
-  margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: #f8fafc;
+  margin: 0;
 }
-
-/* ===== 4. BOTTOM NAV BAR (Fixa) ===== */
-
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
   height: 70px;
   background-color: #1e293b;
   border-top: 1px solid #334155;
@@ -175,8 +145,8 @@ select,
   justify-content: space-around;
   align-items: center;
   z-index: 20;
+  flex-shrink: 0;
 }
-
 .nav-item {
   background: none;
   border: none;
@@ -190,55 +160,120 @@ select,
   width: 100%;
   height: 100%;
 }
-
+.nav-item.active {
+  color: #a855f7;
+}
 .nav-label {
   font-size: 0.75rem;
 }
 
-.nav-item.active {
-  color: #a855f7;
-  background-color: transparent;
-  outline: none;
-}
-
-*:focus {
-  outline: none; /* Remove a borda padrão que aparece às vezes */
-}
-
-/* ===== 5. CONTEÚDO PRINCIPAL (MAIN) ===== */
-
+/* ===== 4. FEED ===== */
 .app-content {
-  flex: 1; /* Permite que o conteúdo cresça e ocupe o espaço */
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  /* Cria o espaço no final para a Nav Bar fixa não esconder o feed */
-  padding-bottom: 70px;
-}
-
-/* ===== 6. CÂMERA (AREA DE FOTOS) ===== */
-
-.camera-container {
   flex: 1;
-  background-color: black;
-  overflow: hidden;
+  position: relative;
+  overflow-y: auto;
+  width: 100%;
+  padding-bottom: 20px;
+}
+.photos-list-column {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  position: relative; /* <--- ADICIONADO: Define este como o ponto zero para o botão */
+  align-items: center;
+  padding-bottom: 20px;
+}
+.instagram-card {
+  width: 95%;
+  max-width: 500px;
+  background-color: #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  margin-top: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  gap: 10px;
+}
+.card-image-wrapper {
+  width: 100%;
+  background-color: black;
+  min-height: 300px;
+}
+.photo-image {
+  width: 100%;
+  display: block;
+}
+.card-actions {
+  padding: 12px;
+}
+.no-photos {
+  color: #94a3b8;
+  margin-top: 40px;
+  text-align: center;
+  width: 100%;
 }
 
-/* O Vídeo (Espelho) */
+/* ===== 5. CÂMERA ===== */
+.camera-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 70px;
+  background-color: black !important;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .video-preview {
+  flex: 1;
   width: 100%;
-  flex: 1; /* Ocupa todo o espaço vertical sobrando (empurra o botão para baixo) */
+  height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
 }
+.preview-mode-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: black;
+}
+.camera-header-warning {
+  position: absolute;
+  top: 20px;
+  width: 100%;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 5px 0;
+  z-index: 20;
+  font-size: 0.9rem;
+}
+.camera-controles-strip {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+}
 
-/* O Botão de Disparo (Centralizado e Flutuante com Flexbox) */
+/* === SEU CÓDIGO CSS (MANTIDO ESTRITAMENTE) === */
 .botao-disparo {
   width: 80px;
   height: 80px;
+  min-width: 80px;
+  min-height: 80px; /* Impede esmagamento */
   border-radius: 50%;
   border: 4px solid white;
   background: transparent;
@@ -246,191 +281,136 @@ select,
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 5;
-  padding: 0;
-  /* Centraliza horizontalmente e separa o botão do vídeo/navbar */
-  margin: 15px auto;
+  flex-shrink: 0; /* <--- O SEGRED0: Não deixa o flexbox espremer o botão */
 }
 
-/* O Miolo do Botão */
 .botao-disparo-interno {
-  width: 60px;
-  height: 60px;
+  padding: 30px;
   background-color: white;
   border-radius: 50%;
-  transition: all 0.2s ease;
+  transition: 0.2s;
 }
 
 .botao-disparo:active .botao-disparo-interno {
   transform: scale(0.9);
   background-color: #a855f7;
 }
-.camera-controles-strip {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: absolute;
-  bottom: 0px;
-  position: fixed;
-  bottom: 85px;
-  left: 0;
-}
-.input-invisivel {
-  display: none !important;
-}
-.botao-galeria {
-  background: transparent;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: transform 0.2s ease;
-  width: 30%;
-}
+
+/* ÍCONES LATERAIS MAIORES */
+.botao-galeria,
 .botao-flip {
   background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0px;
+  width: 60px;
+  height: 60px;
   display: flex;
-  justify-content: center;
   align-items: center;
-  width: 30%;
+  justify-content: center;
+  flex-shrink: 0; /* Garante tamanho real */
 }
-/* Efeito sutil ao clicar */
-.botao-galeria:active,
-.botao-flip:active {
-  transform: scale(0.9);
+/* Aumenta o desenho do ícone (SVG) */
+.botao-galeria svg,
+.botao-flip svg {
+  width: 30px;
+  height: 30px;
 }
 
+.input-invisivel,
 .canvas-invisivel {
-  display: none;
+  display: none !important;
 }
 
-
-
-/* Estrutura da Página de Perfil */
+/* ===== 6. PERFIL ===== */
 .profile-page-container {
-  padding: 20px;
+  padding: 20px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
   width: 100%;
-  border-bottom: 1px solid rgba(9, 22, 53, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
-
-/* Card Principal */
 .profile-card {
-  background-color: var(--cor-bg-secundaria); /* Sua cor de fundo secundária */
-  padding: 10px 20px;
-  border-radius: 15px;
+  background-color: #1e293b;
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  margin-bottom: 30px;
 }
-
-/* Wrapper da Foto (para o círculo) */
 .profile-photo-wrapper {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%; /* Faz o círculo */
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
   overflow: hidden;
-  margin: 0 auto 20px;
-  border: 4px solid var(--cor-principal); /* Borda roxa chamativa */
-  box-shadow: 0 0 10px rgba(124, 58, 237, 0.5); /* Sombra suave */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin: 0 auto 15px;
+  border: 3px solid #a855f7;
 }
-
-/* Imagem Real */
 .profile-photo {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Garante que a foto cubra o círculo sem distorcer */
+  object-fit: cover;
 }
-
-/* Placeholder (se não tiver foto) */
 .profile-placeholder {
   width: 100%;
   height: 100%;
+  background: #334155;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #333; /* Cor de fundo do placeholder */
 }
-
-/* Textos */
 .profile-name {
-  color: white;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   margin-bottom: 5px;
 }
 
-.profile-tag {
-  color: var(--cor-texto-suave); /* Uma cor mais clara para o texto */
-  font-size: 0.9rem;
-  margin-top: 0;
+.profile-grid-title {
+  width: 90%;
+  text-align: left;
+  margin-bottom: 10px;
+  color: #a855f7;
+  font-weight: bold;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 5px;
+}
+.profile-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  width: 100%;
+}
+.profile-grid-item {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%;
+  background-color: #000;
+}
+.profile-grid-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-/* Loader */
-.loading-text {
-  color: white;
-  margin-top: 50px;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* ===== 7. DESKTOP MEDIA QUERY (Responsividade) ===== */
-
+/* ===== 7. RESPONSIVIDADE ===== */
 @media (min-width: 768px) {
-  /* Centraliza a div principal */
-  .container-guest {
-    max-width: 720px;
-    margin: 0 auto;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    border-left: 1px solid #1e293b;
-    border-right: 1px solid #1e293b;
-  }
-
-  /* Corrige o alinhamento de Header e Nav Fixas/Stickies */
-  .header-party {
-    max-width: 720px;
-  }
   .bottom-nav {
-    max-width: 720px;
-    left: 50%;
-    transform: translateX(-50%);
-    right: auto;
+    justify-content: center;
+    gap: 100px;
+  }
+  .camera-container {
+    position: absolute;
   }
   .camera-controles-strip {
-    width: 720px;
-    display: flex;
-    margin: 0 auto;
-    align-items: center;
-    justify-content: space-between;
-    position: absolute;
-    bottom: 0px;
-    left: 0;
-  }
-
-  /* Ajustes de fonte para desktop */
-  .title-error {
-    font-size: 6rem;
-  }
-
-  .messenger-error {
-    font-size: 1.5rem;
+    width: 600px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 20px;
+    border-radius: 20px;
   }
 }

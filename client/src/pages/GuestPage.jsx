@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Home, Camera, User, Image, RefreshCw } from "lucide-react";
+import { Home, Camera, User, Image, RefreshCw, X, Check } from "lucide-react"; // Removi Heart
 import { useParams } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import "../styles/GuestPage.css";
@@ -7,43 +7,47 @@ import { nanoid } from "nanoid";
 import logoMemora from "../assets/logo-memora.png";
 
 const GuestPage = () => {
-  //Espiao da url(slug)
   const { slug } = useParams();
 
-  // ESTADOS PARA O LOGIN DO CONVIDADO
+  // --- ESTADOS ---
   const [localUserId, setLocalUserId] = useState(null);
   const [nomeConvidado, setNomeConvidado] = useState("");
   const [fotoPerfil, setFotoPerfil] = useState(null);
   const [mostrarEntry, setMostrarEntry] = useState(false);
   const [dadosPerfil, setDadosPerfil] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
 
-  //O database
+  // Dados do BD
   const [festa, setFesta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
 
-  //States
+  // Navegação
   const [abaAtiva, setAbaAtiva] = useState("feed");
-  const [stream, setStream] = useState(null);
   const [facingMode, setFacingMode] = useState("environment");
-  const [authError, setAuthError] = useState(false);
 
-  //Refs
+  // FEEDS
+  const [fotosFeed, setFotosFeed] = useState([]);
+  const [fotosPerfil, setFotosPerfil] = useState([]);
+
+  // CÂMERA, PREVIEW E LEGENDA
+  const [modoCamera, setModoCamera] = useState("feed");
+  const [fotoPreview, setFotoPreview] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [legenda, setLegenda] = useState(""); // <--- NOVO: Estado da legenda
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const formRef = useRef(null);
 
+  // --- 1. INICIALIZAÇÃO ---
   const buscarFesta = async () => {
     setLoading(true);
     setErro(false);
-
     const { data, error } = await supabase
       .from("festas")
       .select("*")
-      .eq("slug", slug) //Filtro e o que desejamos encontrar
+      .eq("slug", slug)
       .single();
-
     if (error) {
       console.log("Erro:", error);
       setErro(true);
@@ -54,294 +58,254 @@ const GuestPage = () => {
   };
 
   const ensureGuestAuth = async () => {
-    // 1. Verifica se já existe uma sessão válida
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     if (!user) {
-      // Se não há usuário Supabase, cria um novo (primeiro acesso)
       const { error } = await supabase.auth.signInAnonymously();
-
-      if (error) {
-        console.error("ERRO CRÍTICO NA CRIAÇÃO DE CONVIDADO:", error);
-
-        setAuthError(true);
-        return false; // Falha na criação da sessão
-      }
-      console.log("Sessão de convidado anônimo iniciada com sucesso.");
-    } else {
-      console.log(`Sessão de convidado ativa: ${user.id}`);
+      if (error) return false;
     }
-
-    // Retorna TRUE se a sessão foi encontrada ou criada com sucesso
     return true;
   };
 
   const enviarParaUpload = async (fotoBlob, nomeArquivo) => {
-    setLoading(true); // Começa a girar o loader na tela
+    setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
-      console.error("DEBUG: Usuário não autenticado. O token falhou.");
-      alert("Sua sessão falhou. Por favor, recarregue a página.");
+      alert("Sessão inválida.");
       setLoading(false);
       return null;
     }
-    // O caminho completo do arquivo no bucket
+
     const pathArquivo = `${festa.slug}/${nomeArquivo}`;
-
-    // Chama o serviço de Storage do Supabase
     const { data, error } = await supabase.storage
-      .from("fotos-eventos") // Nome do nosso Bucket
-      .upload(pathArquivo, fotoBlob, {
-        cacheControl: "3600", // Armazenamento em cache de 1 hora
-        upsert: false, // Garante que não sobrescreva arquivos existentes
-      });
+      .from("fotos-eventos")
+      .upload(pathArquivo, fotoBlob, { cacheControl: "3600", upsert: false });
 
-    setLoading(false); // Termina o loader
-
+    setLoading(false);
     if (error) {
-      console.error("Erro no upload para o Storage:", error);
-      alert("Falha ao enviar a foto! Tente novamente.");
+      alert("Falha no envio.");
       return null;
     }
-
-    // Retorna o caminho do arquivo no Storage
     return data.path;
   };
 
-  const toggleCameraFacing = () => {
-    // Se o modo atual é 'environment' (traseira), muda para 'user' (frontal), e vice-versa.
-    setFacingMode((currentMode) =>
-      currentMode === "environment" ? "user" : "environment"
-    );
-    // O useEffect perceberá a mudança e reiniciará a câmera automaticamente.
-  };
+  // --- 2. BUSCA DE DADOS (SIMPLIFICADA - SEM LIKES) ---
 
-  const handleArquivoGaleria = (event) => {
-    const arquivo = event.target.files[0];
-    if (arquivo) {
-      console.log("Arquivo da Galeria selecionado:", arquivo.name);
-      // Aqui no futuro vamos pular a captura e ir direto para o upload.
-    }
-  };
+  const buscarFotosDoFeed = async () => {
+    if (!festa?.id) return;
 
-  const capturarFoto = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    // A. Busca TODAS as fotos desta festa (incluindo legenda)
+    const { data: fotosData } = await supabase
+      .from("fotos")
+      .select("*")
+      .eq("festa_id", festa.id)
+      .order("created_at", { ascending: false });
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
-
-    // 1. Defina o tamanho do quadrado de corte (TARGET SIZE)
-    const tamanhoDoQuadrado = Math.min(video.videoWidth, video.videoHeight);
-
-    // 2. Calcula o DESLOCAMENTO (onde o corte começa para centralizar)
-    const dx = (video.videoWidth - tamanhoDoQuadrado) / 2; // Deslocamento horizontal
-    const dy = (video.videoHeight - tamanhoDoQuadrado) / 2; // Deslocamento vertical
-
-    // 3. Ajusta o Canvas para o tamanho exato do quadrado de saída
-    canvas.width = tamanhoDoQuadrado;
-    canvas.height = tamanhoDoQuadrado;
-
-    // 4. Desenha o frame, CORTANDO as bordas
-    context.drawImage(
-      video,
-      dx,
-      dy,
-      tamanhoDoQuadrado,
-      tamanhoDoQuadrado,
-      0,
-      0,
-      tamanhoDoQuadrado,
-      tamanhoDoQuadrado
-    );
-
-    const fotoBlob = await converterCanvasParaBlob(canvas);
-
-    const uniqueId = nanoid(8); //Gera um ID de 8 caracteres
-    const nomeArquivo = `memora-${uniqueId}.jpeg`;
-
-    if (fotoBlob) {
-      const urlStorage = await enviarParaUpload(fotoBlob, nomeArquivo);
-
-      if (urlStorage) {
-        // NOVIDADE: Chama o banco para salvar o URL
-        await inserirMetadataFoto(urlStorage);
-      }
+    if (!fotosData || fotosData.length === 0) {
+      setFotosFeed([]);
+      return;
     }
 
-    // console.log("Foto capturada e cortada no formato 1:1!");
-    // Próximo passo: Conversão.
-  };
+    // B. Coleta IDs para buscar autores
+    const userIds = [...new Set(fotosData.map((f) => f.user_id))];
 
-  const converterCanvasParaBlob = (canvas) => {
-    return new Promise((resolve) => {
-      // Usa o método nativo do Canvas para criar um arquivo (Blob)
-      // 'image/jpeg' é mais leve que PNG, ideal para fotos de feed
-      canvas.toBlob(
-        (blob) => {
-          resolve(blob);
-        },
-        "image/jpeg",
-        0.9
-      ); // 0.9 é a qualidade (90%)
+    // C. Busca Autores (Convidados)
+    const { data: autoresData } = await supabase
+      .from("convidados")
+      .select("auth_id, nome, foto_perfil_url")
+      .in("auth_id", userIds);
+
+    // D. Monta o objeto final
+    const feedCompleto = fotosData.map((foto) => {
+      const autor = autoresData?.find((a) => a.auth_id === foto.user_id);
+      return {
+        ...foto,
+        convidados: autor || { nome: "Convidado", foto_perfil_url: null },
+      };
     });
+    setFotosFeed(feedCompleto);
   };
 
-  const inserirMetadataFoto = async (storagePath) => {
-    setLoading(true);
-
-    // 1. OBTEM O USUÁRIO LOGADO para inserir o ID correto
+  const buscarFotosDoPerfil = async () => {
+    if (!festa?.id) return;
     const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
 
-    if (!userData.user) {
-      setLoading(false);
-      alert(
-        "Erro: Você precisa estar logado para postar fotos! Tente recarregar a página."
-      );
-      return false;
-    }
+    const { data } = await supabase
+      .from("fotos")
+      .select("*")
+      .eq("festa_id", festa.id)
+      .eq("user_id", userData.user.id)
+      .order("created_at", { ascending: false });
 
-    const userId = userData.user.id; // Captura o ID de autenticação do Supabase
+    if (data) setFotosPerfil(data);
+  };
 
-    // 2. Obter o URL Público da foto
+  // FUNÇÃO DE INSERÇÃO NO BANCO (AGORA COM LEGENDA)
+  const inserirMetadataFotoFeed = async (storagePath, textoLegenda) => {
+    setLoading(true);
+    const { data: userData } = await supabase.auth.getUser();
     const { data: urlData } = supabase.storage
       .from("fotos-eventos")
       .getPublicUrl(storagePath);
 
-    const publicUrl = urlData.publicUrl; // Este é o link final da foto
-
-    // 3. Inserir na tabela 'fotos'
+    // Inserindo com legenda
     const { error } = await supabase.from("fotos").insert([
       {
         festa_id: festa.id,
-        user_id: userId, // NOVIDADE: Salvamos quem tirou a foto
-        url: publicUrl,
+        user_id: userData.user.id,
+        url: urlData.publicUrl,
+        legenda: textoLegenda, // <--- Salva no banco
       },
     ]);
 
     setLoading(false);
-
-    if (error) {
-      console.error("Erro ao salvar foto no banco:", error);
-      alert("Erro interno ao registrar foto.");
-      return false;
+    if (!error) {
+      setAbaAtiva("feed");
+      await buscarFotosDoFeed();
     }
-
-    // Sucesso! Volta para a aba Feed
-    console.log(`Foto salva no feed: ${publicUrl}`);
-    setAbaAtiva("feed");
-    return true;
   };
 
-  const inserirDadosConvidado = async (nanoId) => {
-    // 1. Obtém o usuário JWT
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return false;
+  // --- 3. CÂMERA E PREVIEW ---
+  const handleDisparoCamera = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
 
+    // Corte 4:5
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+    const targetAspectRatio = 4 / 5;
+    let cropWidth, cropHeight, dx, dy;
+
+    if (videoWidth / videoHeight > targetAspectRatio) {
+      cropHeight = videoHeight;
+      cropWidth = videoHeight * targetAspectRatio;
+      dx = (videoWidth - cropWidth) / 2;
+      dy = 0;
+    } else {
+      cropWidth = videoWidth;
+      cropHeight = videoWidth / targetAspectRatio;
+      dx = 0;
+      dy = (videoHeight - cropHeight) / 2;
+    }
+
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    canvas
+      .getContext("2d")
+      .drawImage(
+        video,
+        dx,
+        dy,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        cropWidth,
+        cropHeight
+      );
+
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          setFotoPreview(blob);
+          setPreviewUrl(URL.createObjectURL(blob));
+        }
+      },
+      "image/jpeg",
+      0.9
+    );
+  };
+
+  const handleConfirmarEnvio = async () => {
+    if (!fotoPreview) return;
+    const uniqueId = nanoid(8);
+
+    if (modoCamera === "feed") {
+      const url = await enviarParaUpload(
+        fotoPreview,
+        `memora-feed-${uniqueId}.jpeg`
+      );
+      // Passa a legenda junto
+      if (url) await inserirMetadataFotoFeed(url, legenda);
+    } else {
+      const url = await enviarParaUpload(
+        fotoPreview,
+        `memora-perfil-${uniqueId}.jpeg`
+      );
+      if (url) {
+        const { data } = supabase.storage
+          .from("fotos-eventos")
+          .getPublicUrl(url);
+        await atualizarFotoPerfilConvidado(data.publicUrl);
+        setDadosPerfil((prev) => ({
+          ...prev,
+          foto_perfil_url: data.publicUrl,
+        }));
+        setAbaAtiva("perfil");
+      }
+    }
+    // Limpeza
+    setFotoPreview(null);
+    setPreviewUrl(null);
+    setLegenda(""); // Limpa legenda
+  };
+
+  const handleDescartarFoto = () => {
+    setFotoPreview(null);
+    setPreviewUrl(null);
+    setLegenda("");
+  };
+
+  // --- 4. ENTRY E PERFIL ---
+  const handleEntrySubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    if (!nomeConvidado) {
+      alert("Nome obrigatório");
+      setLoading(false);
+      return;
+    }
+    if (!(await ensureGuestAuth())) {
+      setLoading(false);
+      return;
+    }
+
+    const { data: userData } = await supabase.auth.getUser();
+    const newGuestId = nanoid(10);
     const { error } = await supabase
       .from("convidados")
-      // ⚡️ CORREÇÃO CRÍTICA: Use .upsert() ao invés de .insert() ⚡️
       .upsert(
         [
           {
             auth_id: userData.user.id,
-            local_nano_id: nanoId,
+            local_nano_id: newGuestId,
             festa_id: festa.id,
             nome: nomeConvidado,
           },
         ],
-        {
-          onConflict: "auth_id", // Garante que a atualização seja pela chave auth_id
-        }
+        { onConflict: "auth_id" }
       );
 
     if (error) {
-      console.error("Erro ao salvar dados do convidado:", error);
-      alert("Falha ao salvar seu perfil. Tente novamente.");
-      return false;
-    }
-
-    console.log("Dados do convidado salvos/atualizados no banco.");
-    return true;
-  };
-
-  const atualizarFotoPerfilConvidado = async (urlStorage) => {
-    // 1. Obtém o usuário logado para saber qual linha atualizar
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return false;
-
-    const userId = userData.user.id; // ID de autenticação do Supabase
-
-    // 2. Atualiza a tabela 'convidados' com a URL da foto de perfil
-    const { error } = await supabase
-      .from("convidados")
-      .update({
-        // 🚨 ATENÇÃO: Verifique se o nome da sua coluna é 'url_foto_perfil'
-        foto_perfil_url: urlStorage,
-      })
-      .eq("auth_id", userId); // Atualiza a linha do usuário logado
-
-    if (error) {
-      console.error("Erro ao atualizar foto de perfil do convidado:", error);
-      alert("Erro interno ao registrar a foto de perfil.");
-      return false;
-    }
-
-    console.log(`Foto de perfil salva no banco: ${urlStorage}`);
-    return true;
-  };
-
-  const handleEntrySubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // 1. Cria a sessão JWT
-    if (!nomeConvidado) {
-      alert("Por favor, preencha seu nome.");
       setLoading(false);
       return;
     }
-
-    const authSuccess = await ensureGuestAuth();
-
-    if (!authSuccess) {
-      setLoading(false);
-      return;
-    }
-
-    // 2. Persistência do Nome no BD
-    const newGuestId = nanoid(10);
-    const dadosSalvos = await inserirDadosConvidado(newGuestId);
-
-    if (!dadosSalvos) {
-      setLoading(false);
-      setAuthError(true);
-      return;
-    }
-
-    let fotoUrlFinal = null;
-
     if (fotoPerfil) {
-      // Reutiliza a lógica de upload, enviando o File (que é um Blob)
       const uniqueId = nanoid(8);
-      const nomeArquivo = `perfil-${uniqueId}.jpeg`; // Nome genérico para perfil
-
-      const urlStorage = await enviarParaUpload(fotoPerfil, nomeArquivo);
-
-      if (urlStorage) {
-        // Se o upload foi bem-sucedido, atualiza a coluna do convidado com a URL
-        const urlCompleta = supabase.storage
+      const url = await enviarParaUpload(
+        fotoPerfil,
+        `perfil-inicial-${uniqueId}.jpeg`
+      );
+      if (url) {
+        const { data } = supabase.storage
           .from("fotos-eventos")
-          .getPublicUrl(urlStorage).data.publicUrl;
-
-        await atualizarFotoPerfilConvidado(urlCompleta);
-        fotoUrlFinal = urlCompleta;
+          .getPublicUrl(url);
+        await atualizarFotoPerfilConvidado(data.publicUrl);
       }
     }
-
-    // AÇÕES DE SUCESSO (O nome está no banco)
     localStorage.setItem("memora_guest_id", newGuestId);
     setLocalUserId(newGuestId);
     setMostrarEntry(false);
@@ -350,123 +314,95 @@ const GuestPage = () => {
   };
 
   const carregarDadosConvidado = async () => {
-    // Busca o usuário logado para obter o ID (JWT)
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return null;
-
-    // Busca na tabela convidados usando o ID de autenticação
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("convidados")
-      .select("nome, foto_perfil_url") // Pega o nome e o link da foto
+      .select("nome, foto_perfil_url")
       .eq("auth_id", userData.user.id)
       .single();
-
-    if (error) {
-      console.error("Erro ao buscar perfil:", error);
-      return null;
-    }
-
-    // Retorna o objeto: { nome: 'Seu Nome', foto_perfil_url: 'http://...' }
     return data;
   };
 
-  //effects
+  const atualizarFotoPerfilConvidado = async (url) => {
+    const { data: u } = await supabase.auth.getUser();
+    await supabase
+      .from("convidados")
+      .update({ foto_perfil_url: url })
+      .eq("auth_id", u.user.id);
+  };
 
-  useEffect(() => {
-    // Só carrega se o usuário está logado (tem ID local) E a aba for 'perfil'
-    if (abaAtiva === "perfil" && localUserId) {
-      const fetchProfile = async () => {
-        setLoadingProfile(true); // Liga o loader específico
+  const handleArquivoGaleria = async (event) => {
+    const arquivo = event.target.files[0];
+    if (!arquivo) return;
 
-        const perfil = await carregarDadosConvidado();
-
-        if (perfil) {
-          setDadosPerfil(perfil); // Salva o nome e a URL
-        } else {
-          console.log("DEBUG: Perfil não encontrado no banco de dados.");
-        }
-
-        setLoadingProfile(false); // Desliga o loader
-      };
-
-      fetchProfile();
+    // Se for Feed, vamos abrir o preview para por legenda
+    if (modoCamera === "feed") {
+      const objectUrl = URL.createObjectURL(arquivo);
+      setFotoPreview(arquivo); // Salva o blob
+      setPreviewUrl(objectUrl); // Mostra o preview
+      // O usuário vai clicar em "Confirmar" e a legenda vai junto
+    } else {
+      // Se for perfil, sobe direto
+      setLoading(true);
+      const uniqueId = nanoid(8);
+      const url = await enviarParaUpload(
+        arquivo,
+        `perfil-galeria-${uniqueId}.jpeg`
+      );
+      if (url) {
+        const { data } = supabase.storage
+          .from("fotos-eventos")
+          .getPublicUrl(url);
+        await atualizarFotoPerfilConvidado(data.publicUrl);
+        setDadosPerfil((prev) => ({
+          ...prev,
+          foto_perfil_url: data.publicUrl,
+        }));
+        setAbaAtiva("perfil");
+      }
+      setLoading(false);
     }
-  }, [abaAtiva, localUserId]); // Dispara quando a aba muda ou quando o localUserId é setado (primeiro login)
+  };
+
+  // --- EFFECTS ---
   useEffect(() => {
     if (!slug) return;
-
-    // Estado local para garantir que só checamos uma vez
-    const checkInitialLoad = async () => {
-      // 1. Busca os dados da festa (carrega o ID da festa)
-      await buscarFesta();
-
-      // 2. Checa o ID Local (memora_guest_id)
-      const savedUserId = localStorage.getItem("memora_guest_id");
-
-      if (savedUserId) {
-        // Se tem ID Local: Tentamos revalidar a sessão Supabase
-        setLocalUserId(savedUserId);
-        const authSuccess = await ensureGuestAuth();
-
-        if (!authSuccess) {
-          // Se a sessão JWT falhou, forçamos o login de novo
-          setMostrarEntry(true);
-          console.log(
-            "Sessão expirada. Redirecionando para login de convidado."
-          );
-        } else {
-          // Se a sessão JWT revalidou, mostra o App
-          setMostrarEntry(false);
-        }
-      } else {
-        // Se NÃO tem ID Local, mostra o formulário para criar a conta
-        setMostrarEntry(true);
-      }
-    };
-
-    checkInitialLoad();
+    buscarFesta();
+    const savedId = localStorage.getItem("memora_guest_id");
+    if (savedId) {
+      setLocalUserId(savedId);
+      ensureGuestAuth().then((ok) => {
+        if (ok) setMostrarEntry(false);
+        else setMostrarEntry(true);
+      });
+    } else setMostrarEntry(true);
   }, [slug]);
 
   useEffect(() => {
-    let currentStream = null; // Guarda o stream para a função de limpeza
-
-    if (abaAtiva === "camera") {
-      // 1. Inicia a câmera (usando o facingMode)
-      const setupCamera = async () => {
-        try {
-          const mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: facingMode },
-          });
-
-          currentStream = mediaStream; // Guarda o stream recém-criado
-          setStream(mediaStream); // Atualiza o estado
-
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream;
-            videoRef.current.play(); // NOVIDADE: Força o play no celular, se permitido
-          }
-        } catch (err) {
-          console.error("Erro ao acessar câmera:", err);
-          setErro(true); // Pode ser útil para mostrar uma tela de erro na câmera
-        }
-      };
-
-      setupCamera();
+    let currentStream = null;
+    if (abaAtiva === "camera" && !previewUrl) {
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode } })
+        .then((s) => {
+          currentStream = s;
+          if (videoRef.current) videoRef.current.srcObject = s;
+        })
+        .catch((e) => console.error("Erro Cam:", e));
     }
-
-    // 2. A FUNÇÃO DE LIMPEZA (RODA AO SAIR DA ABA OU MUDAR O FACINGMODE)
-    return () => {
-      if (currentStream) {
-        currentStream.getTracks().forEach((track) => track.stop());
-        setStream(null);
-        console.log("Câmera desligada.");
+    if (festa?.id && localUserId) {
+      if (abaAtiva === "feed") buscarFotosDoFeed();
+      if (abaAtiva === "perfil") {
+        carregarDadosConvidado().then((d) => d && setDadosPerfil(d));
+        buscarFotosDoPerfil();
       }
+    }
+    return () => {
+      if (currentStream) currentStream.getTracks().forEach((t) => t.stop());
     };
-  }, [abaAtiva, facingMode]);
+  }, [abaAtiva, facingMode, festa?.id, localUserId, previewUrl]);
 
-  //Returns
-
-  //tela login
+  // --- RENDER ---
   if (mostrarEntry) {
     return (
       <div className="container-guest entry-page-layout">
@@ -475,172 +411,323 @@ const GuestPage = () => {
           onSubmit={handleEntrySubmit}
           className="entry-form-box"
         >
-          {/* LOGO E TÍTULO */}
           <div className="header-entry">
-            <img src={logoMemora} />
+            <img src={logoMemora} alt="Logo" />
             <p className="welcome-subtitle">
-              Bem-vindo(a) à festa:
+              Bem-vindo(a) à festa:{" "}
               <span className="nome-festa-destaque"> {festa?.nome_festa}</span>
             </p>
           </div>
-
-          {/* INPUT: FOTO DA GALERIA */}
-          <label htmlFor="foto-galeria" className="profile-photo-block">
+          <label htmlFor="foto-entry" className="profile-photo-block">
             <Image size={32} />
             <span className="photo-label">
-              {fotoPerfil ? fotoPerfil.name : "Escolher Foto de Perfil"}
+              {fotoPerfil ? "Foto selecionada" : "Foto de Perfil"}
             </span>
           </label>
           <input
             type="file"
-            id="foto-galeria"
+            id="foto-entry"
             accept="image/*"
-            className="input-invisivel" // Mantém a classe existente
-            onChange={(e) => {
-              setFotoPerfil(e.target.files[0]);
-              console.log("FOTO DE PERFIL SELECIONADA:", e.target.files[0]);
-            }}
+            className="input-invisivel"
+            onChange={(e) => setFotoPerfil(e.target.files[0])}
           />
-
-          {/* INPUT: NOME DO CONVIDADO */}
           <input
             type="text"
-            placeholder="Seu nome (ex: Pedro Oliveira)"
+            placeholder="Seu nome"
             className="input-guest-name"
             value={nomeConvidado}
             onChange={(e) => setNomeConvidado(e.target.value)}
             required
           />
-
-          {/* BOTÃO ENTRAR */}
           <button type="submit" className="btn-entry-primary">
-            Entrar na Festa!
+            Entrar!
           </button>
         </form>
       </div>
     );
   }
 
-  //Tela erro
-  if (erro) {
+  if (erro)
     return (
       <div className="container-guest screen">
         <h1 className="title-error">404</h1>
-        <p className="messenger-error">Ops! Essa festa não existe</p>
       </div>
     );
-  }
-  //fluxo de carregando
-  if (!festa) {
+  if (!festa)
     return (
       <div className="container-guest">
-        <p style={{ color: "white", textAlign: "center", marginTop: "50vh" }}>
-          Carregando festa...
-        </p>
+        <p className="loading-text">Carregando...</p>
       </div>
     );
-  }
 
-  //Fluxo normal
   return (
     <div className="container-guest">
-      {/* Header */}
       {abaAtiva === "feed" && (
         <header className="header-party">
           <h1>{festa?.nome_festa}</h1>
         </header>
       )}
 
-      {/* Conteudo */}
       <main className="app-content">
         {abaAtiva === "feed" && (
-          <div className="text-center mt-10 text-slate-500">
-            <p>📸 Aqui vai entrar o Feed de Fotos</p>
+          <div className="feed-container">
+            {loading && <p className="loading-text">Carregando...</p>}
+            {!loading && fotosFeed.length > 0 ? (
+              <div className="photos-list-column">
+                {fotosFeed.map((foto) => (
+                  <div key={foto.id} className="instagram-card">
+                    <div className="card-header">
+                      {foto.convidados?.foto_perfil_url ? (
+                        <img
+                          src={foto.convidados.foto_perfil_url}
+                          alt="Avatar"
+                          className="card-avatar"
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            marginRight: 10,
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            background: "#333",
+                            marginRight: 10,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <User size={16} />
+                        </div>
+                      )}
+                      <span style={{ fontWeight: "bold" }}>
+                        {foto.convidados?.nome}
+                      </span>
+                    </div>
+                    <div className="card-image-wrapper">
+                      <img src={foto.url} alt="Post" className="photo-image" />
+                    </div>
+                    {/* LEGENDA NO LUGAR DA CURTIDA */}
+                    <div className="card-actions" style={{ padding: "15px" }}>
+                      {foto.legenda && (
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.95rem",
+                            color: "#e2e8f0",
+                          }}
+                        >
+                          <span
+                            style={{ fontWeight: "bold", marginRight: "6px" }}
+                          >
+                            {foto.convidados?.nome}
+                          </span>
+                          {foto.legenda}
+                        </p>
+                      )}
+                      {!foto.legenda && (
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.8rem",
+                            color: "#64748b",
+                          }}
+                        >
+                          Postado recentemente
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-photos">Seja o primeiro a postar!</p>
+            )}
           </div>
         )}
+
         {abaAtiva === "camera" && (
           <div className="camera-container">
-            {/* O Player de Vídeo (O Espelho) */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="video-preview"
-            />
+            {previewUrl ? (
+              <div className="preview-mode-container">
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  style={{
+                    flex: 1,
+                    objectFit: "contain",
+                    width: "100%",
+                    backgroundColor: "#000",
+                  }}
+                />
 
-            <canvas ref={canvasRef} className="canvas-invisivel" />
+                {/* INPUT DE LEGENDA (Aparece só no feed) */}
+                {modoCamera === "feed" && (
+                  <div style={{ padding: "10px 20px", background: "black" }}>
+                    <input
+                      type="text"
+                      placeholder="Escreva uma legenda..."
+                      className="caption-input"
+                      value={legenda}
+                      onChange={(e) => setLegenda(e.target.value)}
+                    />
+                  </div>
+                )}
 
-            <div className="camera-controles-strip">
-              {/* Botão Galeria (1) - Esquerda */}
-              <input
-                type="file"
-                id="galeria-input"
-                accept="image/*"
-                className="input-invisivel"
-                onChange={handleArquivoGaleria}
-              />
-              <label htmlFor="galeria-input" className="botao-galeria">
-                <Image size={35} />
-              </label>
-
-              {/* Botão Disparo (2) - Central (Função para capturar a foto de fato) */}
-              <button className="botao-disparo" onClick={capturarFoto}>
-                <div className="botao-disparo-interno"></div>
-              </button>
-
-              {/* Botão Virar Câmera (3) - Direita */}
-              <button className="botao-flip" onClick={toggleCameraFacing}>
-                <RefreshCw size={35} />
-              </button>
-            </div>
+                <div
+                  className="camera-controles-strip"
+                  style={{ justifyContent: "center", gap: "20px" }}
+                >
+                  <button
+                    onClick={handleDescartarFoto}
+                    style={{
+                      background: "#ef4444",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: 60,
+                      height: 60,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <X size={32} color="white" />
+                  </button>
+                  <button
+                    onClick={handleConfirmarEnvio}
+                    style={{
+                      background: "#22c55e",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: 60,
+                      height: 60,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Check size={32} color="white" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="camera-header-warning">
+                  {modoCamera === "perfil"
+                    ? "Nova Foto de Perfil"
+                    : "Postar no Feed"}
+                </div>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="video-preview"
+                />
+                <canvas ref={canvasRef} className="canvas-invisivel" />
+                <div className="camera-controles-strip">
+                  <input
+                    type="file"
+                    id="galeria-cam"
+                    accept="image/*"
+                    className="input-invisivel"
+                    onChange={handleArquivoGaleria}
+                  />
+                  <label htmlFor="galeria-cam" className="botao-galeria">
+                    <Image />
+                  </label>
+                  <button
+                    className="botao-disparo"
+                    onClick={handleDisparoCamera}
+                  >
+                    <div className="botao-disparo-interno"></div>
+                  </button>
+                  <button
+                    className="botao-flip"
+                    onClick={() =>
+                      setFacingMode((prev) =>
+                        prev === "environment" ? "user" : "environment"
+                      )
+                    }
+                  >
+                    <RefreshCw />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
-        {/* Se a aba for PERFIL, mostra isso */}
+
         {abaAtiva === "perfil" && (
           <div className="profile-page-container">
-            {/* 1. Loader Específico */}
-            {loadingProfile && (
-              <p className="loading-text">Carregando Perfil...</p>
-            )}
-            {/* 2. Conteúdo Principal do Perfil */}
-            {!loadingProfile && dadosPerfil && (
+            {dadosPerfil && (
               <div className="profile-card">
                 <div className="profile-photo-wrapper">
-                  {/* SE TEM FOTO, USA A URL. SE NÃO, MOSTRA O ÍCONE USER (Lucide) */}
-
                   {dadosPerfil.foto_perfil_url ? (
                     <img
                       src={dadosPerfil.foto_perfil_url}
-                      alt={`Foto de perfil de ${dadosPerfil.nome}`}
                       className="profile-photo"
+                      alt="Perfil"
                     />
                   ) : (
                     <div className="profile-placeholder">
-                      <User size={90} color="#7C3AED" />
-                      {/* Ícone Lucide */}
+                      <User size={50} color="#7C3AED" />
                     </div>
                   )}
                 </div>
-
                 <h2 className="profile-name">{dadosPerfil.nome}</h2>
-                <p className="profile-tag">
-                  Convidado(a) da Festa <br /> {festa.nome_festa}
-                </p>
+                <button
+                  className="btn-entry-primary"
+                  style={{
+                    maxWidth: "200px",
+                    margin: "10px auto",
+                    padding: "10px",
+                  }}
+                  onClick={() => {
+                    setModoCamera("perfil");
+                    setAbaAtiva("camera");
+                  }}
+                >
+                  Trocar Foto de Perfil
+                </button>
               </div>
             )}
-            {/* 3. Mensagem de Erro/Falha */}
-            {!loadingProfile && !dadosPerfil && localUserId && (
-              <div className="text-center mt-10 text-slate-500">
-                <p>
-                  Não foi possível carregar seu perfil. Tente recarregar a
-                  página.
+            <div className="profile-grid-title">Minhas Fotos</div>
+            <div className="profile-photos-grid">
+              {fotosPerfil.length > 0 ? (
+                fotosPerfil.map((foto) => (
+                  <div key={foto.id} className="profile-grid-item">
+                    <img
+                      src={foto.url}
+                      className="profile-grid-img"
+                      alt="Minha foto"
+                    />
+                  </div>
+                ))
+              ) : (
+                <p
+                  style={{
+                    color: "#64748b",
+                    padding: "20px",
+                    gridColumn: "span 3",
+                    textAlign: "center",
+                  }}
+                >
+                  Você ainda não postou fotos.
                 </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </main>
-      {/* Nav-bar */}
+
       <nav className="bottom-nav">
         <button
           className={`nav-item ${abaAtiva === "feed" ? "active" : ""}`}
@@ -651,7 +738,10 @@ const GuestPage = () => {
         </button>
         <button
           className={`nav-item ${abaAtiva === "camera" ? "active" : ""}`}
-          onClick={() => setAbaAtiva("camera")}
+          onClick={() => {
+            setModoCamera("feed");
+            setAbaAtiva("camera");
+          }}
         >
           <Camera size={24} />
           <span className="nav-label">Postar</span>
@@ -667,4 +757,5 @@ const GuestPage = () => {
     </div>
   );
 };
+
 export default GuestPage;
