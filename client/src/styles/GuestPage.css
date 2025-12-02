@@ -7,7 +7,7 @@ html {
   margin: 0;
   padding: 0;
   /* Garante que o fundo do corpo seja o mesmo do app quando centralizado */
-  background-color: #0f172a;
+  background-image: linear-gradient(135deg, #0f172a, #2a0b70);
 }
 button,
 a,
@@ -19,10 +19,100 @@ select,
   outline: none; /* Remove a borda de foco que aparece às vezes no desktop */
 }
 
-/* 1. CONTAINER BASE (Contém tudo) */
+.entry-page-layout {
+  flex: 1; /* Ocupa todo o espaço vertical disponível */
+  display: flex;
+  justify-content: center; /* Centraliza Horizontalmente */
+  align-items: center; /* Centraliza Verticalmente */
+  padding: 2rem;
+}
+
+.entry-form-box {
+  max-width: 430px; /* Limite de largura de celular no PC */
+  width: 100%;
+  background-color: #1e293b; /* Slate-800 para dar destaque ao formulário */
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.logo-title {
+  font-size: 2.5rem; /* Tamanho grande */
+  font-weight: bold;
+  color: #a855f7; /* Roxo principal */
+  margin-bottom: 0.5rem;
+}
+
+.welcome-subtitle {
+  color: #cbd5e1; /* Cinza claro */
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+.header-entry img {
+  width: 200px;
+  padding: 30px 0;
+}
+.input-guest-name {
+  width: 100%;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 8px;
+  background-color: #0f172a; /* Fundo mais escuro para o input */
+  color: white;
+  border: 1px solid #334155;
+}
+.nome-festa-destaque {
+  font-weight: bold;
+}
+/* BOTÃO PRIMÁRIO (CIANO) */
+.btn-entry-primary {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 1.5rem;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background-color: #06b6d4; /* Ciano Vívido */
+  color: #ffffff; /* Texto escuro no botão claro */
+  transition: background-color 0.2s;
+}
+.profile-photo-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  width: 100px;
+  height: 100px;
+  margin: 1rem auto; /* Centraliza */
+  border: 2px dashed #64748b; /* Borda tracejada sutil */
+  border-radius: 50%;
+
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.profile-photo-block:hover {
+  color: #a855f7; /* Ícone roxo no hover */
+  border-color: #a855f7;
+}
+
+.photo-label {
+  font-size: 0.8rem;
+}
+.btn-entry-primary:hover {
+  background-color: #20d8f7; /* Ciano ligeiramente mais claro no hover */
+}
+
+/* 1. CONTAINER BASE (Com o gradiente Aurora Boreal) */
 .container-guest {
   min-height: 100vh;
-  background-color: #0f172a;
+  /* Aplicando o gradiente roxo/ciano da identidade visual */
+  background-image: linear-gradient(135deg, #0f172a, #2a0b70);
+  background-color: #0f172a; /* Fallback */
   color: white;
   display: flex;
   flex-direction: column;
@@ -213,12 +303,101 @@ select,
   transform: scale(0.9);
 }
 
+.canvas-invisivel {
+  display: none;
+}
+
+
+
+/* Estrutura da Página de Perfil */
+.profile-page-container {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  border-bottom: 1px solid rgba(9, 22, 53, 0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Card Principal */
+.profile-card {
+  background-color: var(--cor-bg-secundaria); /* Sua cor de fundo secundária */
+  padding: 10px 20px;
+  border-radius: 15px;
+}
+
+/* Wrapper da Foto (para o círculo) */
+.profile-photo-wrapper {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%; /* Faz o círculo */
+  overflow: hidden;
+  margin: 0 auto 20px;
+  border: 4px solid var(--cor-principal); /* Borda roxa chamativa */
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.5); /* Sombra suave */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Imagem Real */
+.profile-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Garante que a foto cubra o círculo sem distorcer */
+}
+
+/* Placeholder (se não tiver foto) */
+.profile-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333; /* Cor de fundo do placeholder */
+}
+
+/* Textos */
+.profile-name {
+  color: white;
+  font-size: 1.8rem;
+  margin-bottom: 5px;
+}
+
+.profile-tag {
+  color: var(--cor-texto-suave); /* Uma cor mais clara para o texto */
+  font-size: 0.9rem;
+  margin-top: 0;
+}
+
+/* Loader */
+.loading-text {
+  color: white;
+  margin-top: 50px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ===== 7. DESKTOP MEDIA QUERY (Responsividade) ===== */
 
 @media (min-width: 768px) {
   /* Centraliza a div principal */
   .container-guest {
-    max-width: 430px;
+    max-width: 720px;
     margin: 0 auto;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     border-left: 1px solid #1e293b;
@@ -227,16 +406,16 @@ select,
 
   /* Corrige o alinhamento de Header e Nav Fixas/Stickies */
   .header-party {
-    max-width: 430px;
+    max-width: 720px;
   }
   .bottom-nav {
-    max-width: 430px;
+    max-width: 720px;
     left: 50%;
     transform: translateX(-50%);
     right: auto;
   }
   .camera-controles-strip {
-    width: 430px;
+    width: 720px;
     display: flex;
     margin: 0 auto;
     align-items: center;
