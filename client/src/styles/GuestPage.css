@@ -1,4 +1,4 @@
-/* src/styles/GuestPage.css - FINAL E AJUSTADO PELO USUÁRIO */
+/* src/styles/GuestPage.css - FINAL E ORGANIZADO */
 
 /* ===== 0. RESET E BASE GERAL ===== */
 html,
@@ -10,10 +10,14 @@ body,
   padding: 0;
   overflow: hidden;
   background-color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
 }
+
 * {
   box-sizing: border-box;
 }
+
 button,
 a,
 input,
@@ -22,7 +26,7 @@ select {
   outline: none;
 }
 
-/* ===== 1. TELA DE LOGIN ===== */
+/* ===== 1. TELA DE LOGIN (ENTRY) ===== */
 .entry-page-layout {
   height: 100%;
   width: 100%;
@@ -33,6 +37,7 @@ select {
   background-image: linear-gradient(135deg, #0f172a, #2a0b70);
   overflow-y: auto;
 }
+
 .entry-form-box {
   max-width: 430px;
   width: 100%;
@@ -42,19 +47,23 @@ select {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   text-align: center;
 }
+
 .header-entry img {
   width: 200px;
   padding: 30px 0;
 }
+
 .welcome-subtitle {
   color: #cbd5e1;
   font-size: 1.1rem;
   margin-bottom: 1.5rem;
 }
+
 .nome-festa-destaque {
   font-weight: bold;
   color: #a855f7;
 }
+
 .profile-photo-block {
   display: flex;
   flex-direction: column;
@@ -69,10 +78,12 @@ select {
   cursor: pointer;
   transition: all 0.2s;
 }
+
 .profile-photo-block:hover {
   color: #a855f7;
   border-color: #a855f7;
 }
+
 .input-guest-name {
   width: 100%;
   padding: 1rem;
@@ -82,6 +93,7 @@ select {
   color: white;
   border: 1px solid #334155;
 }
+
 .btn-entry-primary {
   width: 100%;
   padding: 0.75rem;
@@ -95,6 +107,10 @@ select {
   transition: background-color 0.2s;
 }
 
+.btn-entry-primary:hover {
+  background-color: #20d8f7;
+}
+
 /* ===== 2. CONTAINER PRINCIPAL ===== */
 .container-guest {
   height: 100%;
@@ -105,16 +121,19 @@ select {
   display: flex;
   flex-direction: column;
 }
+
 .screen {
   justify-content: center;
   align-items: center;
 }
+
 .title-error {
   color: #ef4444;
   font-size: 4em;
   font-weight: bold;
   margin-bottom: 1rem;
 }
+
 .loading-text {
   text-align: center;
   margin-top: 50px;
@@ -131,12 +150,14 @@ select {
   width: 100%;
   flex-shrink: 0;
 }
+
 .header-party h1 {
   font-size: 1.25rem;
   font-weight: 600;
   color: #f8fafc;
   margin: 0;
 }
+
 .bottom-nav {
   height: 70px;
   background-color: #1e293b;
@@ -147,6 +168,7 @@ select {
   z-index: 20;
   flex-shrink: 0;
 }
+
 .nav-item {
   background: none;
   border: none;
@@ -160,9 +182,11 @@ select {
   width: 100%;
   height: 100%;
 }
+
 .nav-item.active {
   color: #a855f7;
 }
+
 .nav-label {
   font-size: 0.75rem;
 }
@@ -175,6 +199,12 @@ select {
   width: 100%;
   padding-bottom: 20px;
 }
+
+.feed-container {
+  width: 100%;
+  min-height: 100%;
+}
+
 .photos-list-column {
   width: 100%;
   display: flex;
@@ -182,6 +212,7 @@ select {
   align-items: center;
   padding-bottom: 20px;
 }
+
 .instagram-card {
   width: 95%;
   max-width: 500px;
@@ -192,24 +223,66 @@ select {
   margin-top: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
+
 .card-header {
   display: flex;
   align-items: center;
   padding: 12px;
   gap: 10px;
 }
+
+/* Estilos para Avatar no Feed */
+.card-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
+}
+
+.card-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #333;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-username {
+  font-weight: bold;
+}
+
 .card-image-wrapper {
   width: 100%;
   background-color: black;
   min-height: 300px;
 }
+
 .photo-image {
   width: 100%;
   display: block;
 }
+
 .card-actions {
-  padding: 12px;
+  padding: 12px 15px;
+  text-align: left;
 }
+
+.feed-hashtag {
+  margin: 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.hashtag-symbol {
+  color: #a855f7;
+}
+
 .no-photos {
   color: #94a3b8;
   margin-top: 40px;
@@ -230,19 +303,37 @@ select {
   flex-direction: column;
   overflow: hidden;
 }
+
 .video-preview {
   flex: 1;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.video-preview.mirrored {
   transform: scaleX(-1);
 }
+
 .preview-mode-container {
   flex: 1;
   display: flex;
   flex-direction: column;
   background-color: black;
 }
+
+.preview-image {
+  flex: 1;
+  object-fit: contain;
+  width: 100%;
+  background-color: #000;
+}
+
+.preview-controls {
+  justify-content: center;
+  gap: 20px;
+}
+
 .camera-header-warning {
   position: absolute;
   top: 20px;
@@ -254,6 +345,7 @@ select {
   z-index: 20;
   font-size: 0.9rem;
 }
+
 .camera-controles-strip {
   width: 100%;
   height: 120px;
@@ -268,12 +360,12 @@ select {
   z-index: 20;
 }
 
-/* === SEU CÓDIGO CSS (MANTIDO ESTRITAMENTE) === */
+/* === BOTÕES CÂMERA (Mantidos originais) === */
 .botao-disparo {
   width: 80px;
   height: 80px;
   min-width: 80px;
-  min-height: 80px; /* Impede esmagamento */
+  min-height: 80px;
   border-radius: 50%;
   border: 4px solid white;
   background: transparent;
@@ -281,7 +373,7 @@ select {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  flex-shrink: 0; /* <--- O SEGRED0: Não deixa o flexbox espremer o botão */
+  flex-shrink: 0;
 }
 
 .botao-disparo-interno {
@@ -296,7 +388,6 @@ select {
   background-color: #a855f7;
 }
 
-/* ÍCONES LATERAIS MAIORES */
 .botao-galeria,
 .botao-flip {
   background: transparent;
@@ -309,13 +400,34 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0; /* Garante tamanho real */
+  flex-shrink: 0;
 }
-/* Aumenta o desenho do ícone (SVG) */
+
 .botao-galeria svg,
 .botao-flip svg {
   width: 30px;
   height: 30px;
+}
+
+/* Botões de Ação do Preview (X e Check) */
+.btn-action-cancel,
+.btn-action-confirm {
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-action-cancel {
+  background: #ef4444;
+}
+
+.btn-action-confirm {
+  background: #22c55e;
 }
 
 .input-invisivel,
@@ -325,22 +437,22 @@ select {
 
 /* ===== 6. PERFIL ===== */
 .profile-page-container {
-  padding: 20px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
 }
+
 .profile-card {
   background-color: #1e293b;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: 0 0 15px 15px;
   text-align: center;
-  width: 90%;
-  max-width: 400px;
+  width: 100%;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   margin-bottom: 30px;
 }
+
 .profile-photo-wrapper {
   width: 100px;
   height: 100px;
@@ -349,11 +461,13 @@ select {
   margin: 0 auto 15px;
   border: 3px solid #a855f7;
 }
+
 .profile-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
 .profile-placeholder {
   width: 100%;
   height: 100%;
@@ -362,9 +476,16 @@ select {
   align-items: center;
   justify-content: center;
 }
+
 .profile-name {
   font-size: 1.5rem;
   margin-bottom: 5px;
+}
+
+.btn-profile-edit {
+  max-width: 200px;
+  margin: 10px auto;
+  padding: 10px;
 }
 
 .profile-grid-title {
@@ -376,18 +497,23 @@ select {
   border-bottom: 1px solid #334155;
   padding-bottom: 5px;
 }
+
 .profile-photos-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
   width: 100%;
+  padding: 0px 24px;
 }
+
 .profile-grid-item {
   position: relative;
   width: 100%;
   padding-bottom: 100%;
   background-color: #000;
+  cursor: pointer;
 }
+
 .profile-grid-img {
   position: absolute;
   top: 0;
@@ -395,6 +521,26 @@ select {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.download-overlay {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.no-photos-text {
+  color: #64748b;
+  padding: 20px;
+  grid-column: span 3;
+  text-align: center;
 }
 
 /* ===== 7. RESPONSIVIDADE ===== */

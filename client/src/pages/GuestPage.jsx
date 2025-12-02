@@ -1,13 +1,26 @@
 import { useEffect, useState, useRef } from "react";
-import { Home, Camera, User, Image, RefreshCw, X, Check } from "lucide-react"; // Removi Heart
+import {
+  Home,
+  Camera,
+  User,
+  Image,
+  RefreshCw,
+  X,
+  Check,
+  Download,
+} from "lucide-react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import "../styles/GuestPage.css";
 import { nanoid } from "nanoid";
 import logoMemora from "../assets/logo-memora.png";
+import poweredImage from "../assets/powered-memora.png";
 
 const GuestPage = () => {
   const { slug } = useParams();
+
+  // --- CONTROLE DE BRANDING ---
+  const [ativarBrandingMemora, setAtivarBrandingMemora] = useState(false);
 
   // --- ESTADOS ---
   const [localUserId, setLocalUserId] = useState(null);
@@ -16,7 +29,7 @@ const GuestPage = () => {
   const [mostrarEntry, setMostrarEntry] = useState(false);
   const [dadosPerfil, setDadosPerfil] = useState(null);
 
-  // Dados do BD
+  // BD
   const [festa, setFesta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
@@ -29,17 +42,16 @@ const GuestPage = () => {
   const [fotosFeed, setFotosFeed] = useState([]);
   const [fotosPerfil, setFotosPerfil] = useState([]);
 
-  // CÂMERA, PREVIEW E LEGENDA
+  // CÂMERA
   const [modoCamera, setModoCamera] = useState("feed");
   const [fotoPreview, setFotoPreview] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [legenda, setLegenda] = useState(""); // <--- NOVO: Estado da legenda
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const formRef = useRef(null);
 
-  // --- 1. INICIALIZAÇÃO ---
+  // --- INICIALIZAÇÃO ---
   const buscarFesta = async () => {
     setLoading(true);
     setErro(false);
@@ -90,12 +102,10 @@ const GuestPage = () => {
     return data.path;
   };
 
-  // --- 2. BUSCA DE DADOS (SIMPLIFICADA - SEM LIKES) ---
-
+  // --- BUSCAS DE DADOS ---
   const buscarFotosDoFeed = async () => {
     if (!festa?.id) return;
 
-    // A. Busca TODAS as fotos desta festa (incluindo legenda)
     const { data: fotosData } = await supabase
       .from("fotos")
       .select("*")
@@ -107,16 +117,12 @@ const GuestPage = () => {
       return;
     }
 
-    // B. Coleta IDs para buscar autores
     const userIds = [...new Set(fotosData.map((f) => f.user_id))];
-
-    // C. Busca Autores (Convidados)
     const { data: autoresData } = await supabase
       .from("convidados")
       .select("auth_id, nome, foto_perfil_url")
       .in("auth_id", userIds);
 
-    // D. Monta o objeto final
     const feedCompleto = fotosData.map((foto) => {
       const autor = autoresData?.find((a) => a.auth_id === foto.user_id);
       return {
@@ -142,21 +148,18 @@ const GuestPage = () => {
     if (data) setFotosPerfil(data);
   };
 
-  // FUNÇÃO DE INSERÇÃO NO BANCO (AGORA COM LEGENDA)
-  const inserirMetadataFotoFeed = async (storagePath, textoLegenda) => {
+  const inserirMetadataFotoFeed = async (storagePath) => {
     setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
     const { data: urlData } = supabase.storage
       .from("fotos-eventos")
       .getPublicUrl(storagePath);
 
-    // Inserindo com legenda
     const { error } = await supabase.from("fotos").insert([
       {
         festa_id: festa.id,
         user_id: userData.user.id,
         url: urlData.publicUrl,
-        legenda: textoLegenda, // <--- Salva no banco
       },
     ]);
 
@@ -167,13 +170,88 @@ const GuestPage = () => {
     }
   };
 
-  // --- 3. CÂMERA E PREVIEW ---
+  // --- DOWNLOAD ---
+  const handleDownloadFoto = (url) => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    document.title = "Preparando...";
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      if (ativarBrandingMemora) {
+        const watermark = new window.Image();
+        watermark.src = poweredImage;
+        watermark.crossOrigin = "anonymous";
+
+        watermark.onload = () => {
+          const wmWidth = canvas.width * 0.3;
+          const aspectRatio = watermark.height / watermark.width;
+          const wmHeight = wmWidth * aspectRatio;
+          const x = (canvas.width - wmWidth) / 2;
+          const y = canvas.height - wmHeight - 30;
+
+          ctx.shadowColor = "rgba(0,0,0,0.5)";
+          ctx.shadowBlur = 15;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 4;
+
+          ctx.drawImage(watermark, x, y, wmWidth, wmHeight);
+          saveCanvas(canvas);
+        };
+        watermark.onerror = () => saveCanvas(canvas);
+      } else {
+        saveCanvas(canvas);
+      }
+    };
+    img.onerror = () => {
+      alert("Erro na imagem.");
+      saveOriginal(url);
+    };
+  };
+
+  const saveCanvas = (canvas) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = `memora-${nanoid(6)}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+        document.title = "Memora";
+      },
+      "image/jpeg",
+      0.95
+    );
+  };
+
+  const saveOriginal = (url) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.download = `memora-${nanoid(6)}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // --- CÂMERA (AGORA EM HD) ---
   const handleDisparoCamera = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Corte 4:5
+    // Importante: Usa a resolução REAL do vídeo que conseguimos capturar
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
     const targetAspectRatio = 4 / 5;
@@ -215,8 +293,8 @@ const GuestPage = () => {
         }
       },
       "image/jpeg",
-      0.9
-    );
+      0.95
+    ); // <--- QUALIDADE AUMENTADA PARA 95%
   };
 
   const handleConfirmarEnvio = async () => {
@@ -228,8 +306,7 @@ const GuestPage = () => {
         fotoPreview,
         `memora-feed-${uniqueId}.jpeg`
       );
-      // Passa a legenda junto
-      if (url) await inserirMetadataFotoFeed(url, legenda);
+      if (url) await inserirMetadataFotoFeed(url);
     } else {
       const url = await enviarParaUpload(
         fotoPreview,
@@ -247,19 +324,16 @@ const GuestPage = () => {
         setAbaAtiva("perfil");
       }
     }
-    // Limpeza
     setFotoPreview(null);
     setPreviewUrl(null);
-    setLegenda(""); // Limpa legenda
   };
 
   const handleDescartarFoto = () => {
     setFotoPreview(null);
     setPreviewUrl(null);
-    setLegenda("");
   };
 
-  // --- 4. ENTRY E PERFIL ---
+  // --- ENTRY E PERFIL ---
   const handleEntrySubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -275,19 +349,17 @@ const GuestPage = () => {
 
     const { data: userData } = await supabase.auth.getUser();
     const newGuestId = nanoid(10);
-    const { error } = await supabase
-      .from("convidados")
-      .upsert(
-        [
-          {
-            auth_id: userData.user.id,
-            local_nano_id: newGuestId,
-            festa_id: festa.id,
-            nome: nomeConvidado,
-          },
-        ],
-        { onConflict: "auth_id" }
-      );
+    const { error } = await supabase.from("convidados").upsert(
+      [
+        {
+          auth_id: userData.user.id,
+          local_nano_id: newGuestId,
+          festa_id: festa.id,
+          nome: nomeConvidado,
+        },
+      ],
+      { onConflict: "auth_id" }
+    );
 
     if (error) {
       setLoading(false);
@@ -335,15 +407,11 @@ const GuestPage = () => {
   const handleArquivoGaleria = async (event) => {
     const arquivo = event.target.files[0];
     if (!arquivo) return;
-
-    // Se for Feed, vamos abrir o preview para por legenda
     if (modoCamera === "feed") {
       const objectUrl = URL.createObjectURL(arquivo);
-      setFotoPreview(arquivo); // Salva o blob
-      setPreviewUrl(objectUrl); // Mostra o preview
-      // O usuário vai clicar em "Confirmar" e a legenda vai junto
+      setFotoPreview(arquivo);
+      setPreviewUrl(objectUrl);
     } else {
-      // Se for perfil, sobe direto
       setLoading(true);
       const uniqueId = nanoid(8);
       const url = await enviarParaUpload(
@@ -382,8 +450,18 @@ const GuestPage = () => {
   useEffect(() => {
     let currentStream = null;
     if (abaAtiva === "camera" && !previewUrl) {
+      // --- CONFIGURAÇÃO DE ALTA QUALIDADE AQUI ---
+      const constraints = {
+        video: {
+          facingMode: facingMode,
+          // Tenta pegar 4K ou Full HD se o dispositivo suportar
+          width: { ideal: 4096 },
+          height: { ideal: 2160 },
+        },
+      };
+
       navigator.mediaDevices
-        .getUserMedia({ video: { facingMode } })
+        .getUserMedia(constraints)
         .then((s) => {
           currentStream = s;
           if (videoRef.current) videoRef.current.srcObject = s;
@@ -482,66 +560,24 @@ const GuestPage = () => {
                           src={foto.convidados.foto_perfil_url}
                           alt="Avatar"
                           className="card-avatar"
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: "50%",
-                            marginRight: 10,
-                            objectFit: "cover",
-                          }}
                         />
                       ) : (
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: "50%",
-                            background: "#333",
-                            marginRight: 10,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
+                        <div className="card-avatar-placeholder">
                           <User size={16} />
                         </div>
                       )}
-                      <span style={{ fontWeight: "bold" }}>
+                      <span className="card-username">
                         {foto.convidados?.nome}
                       </span>
                     </div>
                     <div className="card-image-wrapper">
                       <img src={foto.url} alt="Post" className="photo-image" />
                     </div>
-                    {/* LEGENDA NO LUGAR DA CURTIDA */}
-                    <div className="card-actions" style={{ padding: "15px" }}>
-                      {foto.legenda && (
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: "0.95rem",
-                            color: "#e2e8f0",
-                          }}
-                        >
-                          <span
-                            style={{ fontWeight: "bold", marginRight: "6px" }}
-                          >
-                            {foto.convidados?.nome}
-                          </span>
-                          {foto.legenda}
-                        </p>
-                      )}
-                      {!foto.legenda && (
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: "0.8rem",
-                            color: "#64748b",
-                          }}
-                        >
-                          Postado recentemente
-                        </p>
-                      )}
+                    <div className="card-actions">
+                      <p className="feed-hashtag">
+                        <span className="hashtag-symbol">#</span>
+                        {festa?.nome_festa?.replace(/\s+/g, "")}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -556,63 +592,18 @@ const GuestPage = () => {
           <div className="camera-container">
             {previewUrl ? (
               <div className="preview-mode-container">
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  style={{
-                    flex: 1,
-                    objectFit: "contain",
-                    width: "100%",
-                    backgroundColor: "#000",
-                  }}
-                />
+                <img src={previewUrl} alt="Preview" className="preview-image" />
 
-                {/* INPUT DE LEGENDA (Aparece só no feed) */}
-                {modoCamera === "feed" && (
-                  <div style={{ padding: "10px 20px", background: "black" }}>
-                    <input
-                      type="text"
-                      placeholder="Escreva uma legenda..."
-                      className="caption-input"
-                      value={legenda}
-                      onChange={(e) => setLegenda(e.target.value)}
-                    />
-                  </div>
-                )}
-
-                <div
-                  className="camera-controles-strip"
-                  style={{ justifyContent: "center", gap: "20px" }}
-                >
+                <div className="camera-controles-strip preview-controls">
                   <button
                     onClick={handleDescartarFoto}
-                    style={{
-                      background: "#ef4444",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: 60,
-                      height: 60,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                    }}
+                    className="btn-action-cancel"
                   >
                     <X size={32} color="white" />
                   </button>
                   <button
                     onClick={handleConfirmarEnvio}
-                    style={{
-                      background: "#22c55e",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: 60,
-                      height: 60,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                    }}
+                    className="btn-action-confirm"
                   >
                     <Check size={32} color="white" />
                   </button>
@@ -629,7 +620,9 @@ const GuestPage = () => {
                   ref={videoRef}
                   autoPlay
                   playsInline
-                  className="video-preview"
+                  className={`video-preview ${
+                    facingMode === "user" ? "mirrored" : ""
+                  }`}
                 />
                 <canvas ref={canvasRef} className="canvas-invisivel" />
                 <div className="camera-controles-strip">
@@ -684,12 +677,7 @@ const GuestPage = () => {
                 </div>
                 <h2 className="profile-name">{dadosPerfil.nome}</h2>
                 <button
-                  className="btn-entry-primary"
-                  style={{
-                    maxWidth: "200px",
-                    margin: "10px auto",
-                    padding: "10px",
-                  }}
+                  className="btn-entry-primary btn-profile-edit"
                   onClick={() => {
                     setModoCamera("perfil");
                     setAbaAtiva("camera");
@@ -699,29 +687,29 @@ const GuestPage = () => {
                 </button>
               </div>
             )}
-            <div className="profile-grid-title">Minhas Fotos</div>
+            <div className="profile-grid-title">
+              Minhas Fotos (Toque para baixar)
+            </div>
             <div className="profile-photos-grid">
               {fotosPerfil.length > 0 ? (
                 fotosPerfil.map((foto) => (
-                  <div key={foto.id} className="profile-grid-item">
+                  <div
+                    key={foto.id}
+                    className="profile-grid-item"
+                    onClick={() => handleDownloadFoto(foto.url)}
+                  >
                     <img
                       src={foto.url}
                       className="profile-grid-img"
                       alt="Minha foto"
                     />
+                    <div className="download-overlay">
+                      <Download size={12} color="white" />
+                    </div>
                   </div>
                 ))
               ) : (
-                <p
-                  style={{
-                    color: "#64748b",
-                    padding: "20px",
-                    gridColumn: "span 3",
-                    textAlign: "center",
-                  }}
-                >
-                  Você ainda não postou fotos.
-                </p>
+                <p className="no-photos-text">Você ainda não postou fotos.</p>
               )}
             </div>
           </div>
