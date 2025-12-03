@@ -472,7 +472,7 @@ const GuestPage = () => {
   useEffect(() => {
     if (!slug) return;
     buscarFesta();
-    const savedId = localStorage.getItem("memora_guest_id");
+    const savedId = localStorage.getItem("memora_guest_nanoID");
     if (savedId) {
       setLocalUserId(savedId);
       ensureGuestAuth().then((ok) => {
