@@ -32,7 +32,7 @@ const GuestPage = () => {
   const [mostrarEntry, setMostrarEntry] = useState(false);
   const [dadosPerfil, setDadosPerfil] = useState(null);
 
-  // NOVO: Estados de Edição de Nome
+  // Estados de Edição de Nome
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempUserName, setTempUserName] = useState("");
 
@@ -160,15 +160,13 @@ const GuestPage = () => {
       .from("fotos-eventos")
       .getPublicUrl(storagePath);
 
-    const { error } = await supabase
-      .from("fotos")
-      .insert([
-        {
-          festa_id: festa.id,
-          user_id: userData.user.id,
-          url: urlData.publicUrl,
-        },
-      ]);
+    const { error } = await supabase.from("fotos").insert([
+      {
+        festa_id: festa.id,
+        user_id: userData.user.id,
+        url: urlData.publicUrl,
+      },
+    ]);
 
     setLoading(false);
     if (!error) {
@@ -251,7 +249,7 @@ const GuestPage = () => {
     document.body.removeChild(link);
   };
 
-  // --- CÂMERA LOGIC ---
+  // --- CÂMERA LOGIC (PROPORÇÃO 4:5 - INSTAGRAM PORTRAIT) ---
   const handleDisparoCamera = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
@@ -260,12 +258,39 @@ const GuestPage = () => {
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
 
-    // Captura o frame completo (ex: 16:9 ou 4:3)
-    canvas.width = videoWidth;
-    canvas.height = videoHeight;
+    // Proporção Vertical do Instagram (4:5)
+    const targetAspectRatio = 4 / 5;
 
-    // Desenha o frame inteiro no canvas (sem cortar)
-    canvas.getContext("2d").drawImage(video, 0, 0, videoWidth, videoHeight);
+    let cropWidth, cropHeight, dx, dy;
+
+    if (videoWidth / videoHeight > targetAspectRatio) {
+      cropHeight = videoHeight;
+      cropWidth = videoHeight * targetAspectRatio;
+      dx = (videoWidth - cropWidth) / 2;
+      dy = 0;
+    } else {
+      cropWidth = videoWidth;
+      cropHeight = videoWidth / targetAspectRatio;
+      dx = 0;
+      dy = (videoHeight - cropHeight) / 2;
+    }
+
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+
+    canvas
+      .getContext("2d")
+      .drawImage(
+        video,
+        dx,
+        dy,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        cropWidth,
+        cropHeight
+      );
 
     canvas.toBlob(
       (blob) => {
@@ -327,7 +352,6 @@ const GuestPage = () => {
     if (!tempUserName.trim()) return;
 
     setLoading(true);
-    // Update DB
     const { data: userData } = await supabase.auth.getUser();
     const { error } = await supabase
       .from("convidados")
@@ -360,19 +384,17 @@ const GuestPage = () => {
 
     const { data: userData } = await supabase.auth.getUser();
     const newGuestId = nanoid(10);
-    const { error } = await supabase
-      .from("convidados")
-      .upsert(
-        [
-          {
-            auth_id: userData.user.id,
-            local_nano_id: newGuestId,
-            festa_id: festa.id,
-            nome: nomeConvidado,
-          },
-        ],
-        { onConflict: "auth_id" }
-      );
+    const { error } = await supabase.from("convidados").upsert(
+      [
+        {
+          auth_id: userData.user.id,
+          local_nano_id: newGuestId,
+          festa_id: festa.id,
+          nome: nomeConvidado,
+        },
+      ],
+      { onConflict: "auth_id" }
+    );
 
     if (error) {
       setLoading(false);
@@ -391,7 +413,7 @@ const GuestPage = () => {
         await atualizarFotoPerfilConvidado(data.publicUrl);
       }
     }
-    localStorage.setItem("memora_guest_nano_id", newGuestId);
+    localStorage.setItem("memora_guest_id", newGuestId);
     setLocalUserId(newGuestId);
     setMostrarEntry(false);
     setLoading(false);
@@ -539,9 +561,9 @@ const GuestPage = () => {
     return (
       <div className="container-guest screen">
         <h1 className="title-error">404</h1>
-        <h1 className="title-error">ERROR</h1>
       </div>
     );
+
   if (!festa)
     return (
       <div className="container-guest">
@@ -742,7 +764,7 @@ const GuestPage = () => {
                 </button>
               </div>
             )}
-            
+
             <div className="profile-photos-grid">
               {fotosPerfil.length > 0 ? (
                 fotosPerfil.map((foto) => (
