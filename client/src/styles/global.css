@@ -1,7 +1,7 @@
 /* src/styles/global.css */
 
 /*Imports*/
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 /* Reset Básico: Tira margens e paddings de tudo */
 * {
@@ -13,18 +13,19 @@
 /* ROOT */
 
 :root {
+  font-family: "Poppins", sans-serif !important;
   --gradient: linear-gradient(135deg, #7d49f2, #06b6d4);
-
   --color-purple: #7d49f2;
   --color-cyan: #06b6d4;
 }
 
 /* Configurações do corpo do site */
 body {
-  font-family: "Poppins", Tahoma, Geneva, Verdana, sans-serif; /* Fonte padrão do sistema */
+  font-family: 'Poppins', sans-serif !important;
   color: #4e4c4c; /* Texto branco */
   font-weight: 400;
-  -webkit-font-smoothing: antialiased; /* Deixa a fonte mais nítida */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; /* Deixa a fonte mais nítida */
 }
 h1,
 h2,

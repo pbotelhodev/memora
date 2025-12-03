@@ -8,6 +8,9 @@ import {
   X,
   Check,
   Download,
+  Pencil,
+  Save,
+  XCircle,
 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
@@ -28,6 +31,10 @@ const GuestPage = () => {
   const [fotoPerfil, setFotoPerfil] = useState(null);
   const [mostrarEntry, setMostrarEntry] = useState(false);
   const [dadosPerfil, setDadosPerfil] = useState(null);
+
+  // NOVO: Estados de Edição de Nome
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempUserName, setTempUserName] = useState("");
 
   // BD
   const [festa, setFesta] = useState(null);
@@ -51,7 +58,7 @@ const GuestPage = () => {
   const canvasRef = useRef(null);
   const formRef = useRef(null);
 
-  // --- INICIALIZAÇÃO ---
+  // --- FUNÇÕES DE BD ---
   const buscarFesta = async () => {
     setLoading(true);
     setErro(false);
@@ -102,7 +109,6 @@ const GuestPage = () => {
     return data.path;
   };
 
-  // --- BUSCAS DE DADOS ---
   const buscarFotosDoFeed = async () => {
     if (!festa?.id) return;
 
@@ -111,7 +117,6 @@ const GuestPage = () => {
       .select("*")
       .eq("festa_id", festa.id)
       .order("created_at", { ascending: false });
-
     if (!fotosData || fotosData.length === 0) {
       setFotosFeed([]);
       return;
@@ -155,13 +160,15 @@ const GuestPage = () => {
       .from("fotos-eventos")
       .getPublicUrl(storagePath);
 
-    const { error } = await supabase.from("fotos").insert([
-      {
-        festa_id: festa.id,
-        user_id: userData.user.id,
-        url: urlData.publicUrl,
-      },
-    ]);
+    const { error } = await supabase
+      .from("fotos")
+      .insert([
+        {
+          festa_id: festa.id,
+          user_id: userData.user.id,
+          url: urlData.publicUrl,
+        },
+      ]);
 
     setLoading(false);
     if (!error) {
@@ -170,7 +177,6 @@ const GuestPage = () => {
     }
   };
 
-  // --- DOWNLOAD ---
   const handleDownloadFoto = (url) => {
     const img = new window.Image();
     img.crossOrigin = "anonymous";
@@ -245,45 +251,21 @@ const GuestPage = () => {
     document.body.removeChild(link);
   };
 
-  // --- CÂMERA (AGORA EM HD) ---
+  // --- CÂMERA LOGIC ---
   const handleDisparoCamera = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Importante: Usa a resolução REAL do vídeo que conseguimos capturar
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
-    const targetAspectRatio = 4 / 5;
-    let cropWidth, cropHeight, dx, dy;
 
-    if (videoWidth / videoHeight > targetAspectRatio) {
-      cropHeight = videoHeight;
-      cropWidth = videoHeight * targetAspectRatio;
-      dx = (videoWidth - cropWidth) / 2;
-      dy = 0;
-    } else {
-      cropWidth = videoWidth;
-      cropHeight = videoWidth / targetAspectRatio;
-      dx = 0;
-      dy = (videoHeight - cropHeight) / 2;
-    }
+    // Captura o frame completo (ex: 16:9 ou 4:3)
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
 
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
-    canvas
-      .getContext("2d")
-      .drawImage(
-        video,
-        dx,
-        dy,
-        cropWidth,
-        cropHeight,
-        0,
-        0,
-        cropWidth,
-        cropHeight
-      );
+    // Desenha o frame inteiro no canvas (sem cortar)
+    canvas.getContext("2d").drawImage(video, 0, 0, videoWidth, videoHeight);
 
     canvas.toBlob(
       (blob) => {
@@ -294,7 +276,7 @@ const GuestPage = () => {
       },
       "image/jpeg",
       0.95
-    ); // <--- QUALIDADE AUMENTADA PARA 95%
+    );
   };
 
   const handleConfirmarEnvio = async () => {
@@ -333,6 +315,35 @@ const GuestPage = () => {
     setPreviewUrl(null);
   };
 
+  // --- FUNÇÕES DE EDIÇÃO DE NOME ---
+  const handleEditClick = () => {
+    if (dadosPerfil?.nome) {
+      setTempUserName(dadosPerfil.nome);
+      setIsEditingName(true);
+    }
+  };
+
+  const handleSaveNewName = async () => {
+    if (!tempUserName.trim()) return;
+
+    setLoading(true);
+    // Update DB
+    const { data: userData } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("convidados")
+      .update({ nome: tempUserName })
+      .eq("auth_id", userData.user.id);
+
+    setLoading(false);
+    if (!error) {
+      setDadosPerfil((prev) => ({ ...prev, nome: tempUserName }));
+      setIsEditingName(false);
+    } else {
+      console.error("Erro ao salvar nome:", error);
+      alert("Falha ao salvar nome. Tente novamente.");
+    }
+  };
+
   // --- ENTRY E PERFIL ---
   const handleEntrySubmit = async (e) => {
     e.preventDefault();
@@ -349,17 +360,19 @@ const GuestPage = () => {
 
     const { data: userData } = await supabase.auth.getUser();
     const newGuestId = nanoid(10);
-    const { error } = await supabase.from("convidados").upsert(
-      [
-        {
-          auth_id: userData.user.id,
-          local_nano_id: newGuestId,
-          festa_id: festa.id,
-          nome: nomeConvidado,
-        },
-      ],
-      { onConflict: "auth_id" }
-    );
+    const { error } = await supabase
+      .from("convidados")
+      .upsert(
+        [
+          {
+            auth_id: userData.user.id,
+            local_nano_id: newGuestId,
+            festa_id: festa.id,
+            nome: nomeConvidado,
+          },
+        ],
+        { onConflict: "auth_id" }
+      );
 
     if (error) {
       setLoading(false);
@@ -378,7 +391,7 @@ const GuestPage = () => {
         await atualizarFotoPerfilConvidado(data.publicUrl);
       }
     }
-    localStorage.setItem("memora_guest_id", newGuestId);
+    localStorage.setItem("memora_guest_nano_id", newGuestId);
     setLocalUserId(newGuestId);
     setMostrarEntry(false);
     setLoading(false);
@@ -450,11 +463,9 @@ const GuestPage = () => {
   useEffect(() => {
     let currentStream = null;
     if (abaAtiva === "camera" && !previewUrl) {
-      // --- CONFIGURAÇÃO DE ALTA QUALIDADE AQUI ---
       const constraints = {
         video: {
           facingMode: facingMode,
-          // Tenta pegar 4K ou Full HD se o dispositivo suportar
           width: { ideal: 4096 },
           height: { ideal: 2160 },
         },
@@ -492,7 +503,6 @@ const GuestPage = () => {
           <div className="header-entry">
             <img src={logoMemora} alt="Logo" />
             <p className="welcome-subtitle">
-              Bem-vindo(a) à festa:{" "}
               <span className="nome-festa-destaque"> {festa?.nome_festa}</span>
             </p>
           </div>
@@ -529,6 +539,7 @@ const GuestPage = () => {
     return (
       <div className="container-guest screen">
         <h1 className="title-error">404</h1>
+        <h1 className="title-error">ERROR</h1>
       </div>
     );
   if (!festa)
@@ -542,7 +553,10 @@ const GuestPage = () => {
     <div className="container-guest">
       {abaAtiva === "feed" && (
         <header className="header-party">
-          <h1>{festa?.nome_festa}</h1>
+          <h1 className="header-gradient-title">{festa?.nome_festa}</h1>
+          <button className="btn-refresh" onClick={buscarFotosDoFeed}>
+            <RefreshCw size={20} color="currentColor" />
+          </button>
         </header>
       )}
 
@@ -563,7 +577,7 @@ const GuestPage = () => {
                         />
                       ) : (
                         <div className="card-avatar-placeholder">
-                          <User size={16} />
+                          <User size={14} />
                         </div>
                       )}
                       <span className="card-username">
@@ -675,21 +689,60 @@ const GuestPage = () => {
                     </div>
                   )}
                 </div>
-                <h2 className="profile-name">{dadosPerfil.nome}</h2>
+
+                {/* LÓGICA DE EDIÇÃO DE NOME */}
+                {isEditingName ? (
+                  <div className="profile-name-edit-wrapper">
+                    <input
+                      type="text"
+                      className="input-edit-name"
+                      value={tempUserName}
+                      onChange={(e) => setTempUserName(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") handleSaveNewName();
+                      }}
+                      disabled={loading}
+                    />
+                    <button
+                      onClick={handleSaveNewName}
+                      className="btn-edit-name"
+                    >
+                      <Save size={20} color="#22c55e" />
+                    </button>
+                    <button
+                      onClick={() => setIsEditingName(false)}
+                      className="btn-edit-name"
+                      disabled={loading}
+                    >
+                      <XCircle size={20} color="#ef4444" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="profile-name-edit-wrapper">
+                    <h2 className="profile-name">{dadosPerfil.nome}</h2>
+                    <button
+                      onClick={handleEditClick}
+                      className="btn-edit-name"
+                      disabled={loading}
+                    >
+                      <Pencil size={16} color="currentColor" />
+                    </button>
+                  </div>
+                )}
+
                 <button
                   className="btn-entry-primary btn-profile-edit"
                   onClick={() => {
                     setModoCamera("perfil");
                     setAbaAtiva("camera");
                   }}
+                  disabled={loading}
                 >
                   Trocar Foto de Perfil
                 </button>
               </div>
             )}
-            <div className="profile-grid-title">
-              Minhas Fotos (Toque para baixar)
-            </div>
+            
             <div className="profile-photos-grid">
               {fotosPerfil.length > 0 ? (
                 fotosPerfil.map((foto) => (
