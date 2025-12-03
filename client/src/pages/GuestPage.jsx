@@ -11,8 +11,7 @@ import {
   Pencil,
   Save,
   XCircle,
-} 
-from "lucide-react";
+} from "lucide-react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import "../styles/GuestPage.css";
@@ -54,7 +53,7 @@ const GuestPage = () => {
   const [modoCamera, setModoCamera] = useState("feed");
   const [fotoPreview, setFotoPreview] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [botaoEnviar, setBotaoEnviar] = useState(true)
+  const [botaoEnviar, setBotaoEnviar] = useState(true);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -643,12 +642,14 @@ const GuestPage = () => {
                   >
                     <X size={32} color="white" />
                   </button>
-                  {botaoEnviar ? <button
-                    onClick={handleConfirmarEnvio}
-                    className="btn-action-confirm"
-                  >
-                    <Check size={32} color="white" />
-                  </button> : null}
+                  {botaoEnviar ? (
+                    <button
+                      onClick={handleConfirmarEnvio}
+                      className="btn-action-confirm"
+                    >
+                      <Check size={32} color="white" />
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ) : (
