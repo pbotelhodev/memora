@@ -413,7 +413,7 @@ const GuestPage = () => {
         await atualizarFotoPerfilConvidado(data.publicUrl);
       }
     }
-    localStorage.setItem("memora_guest_id", newGuestId);
+    localStorage.setItem("memora_guest_nanoID", newGuestId);
     setLocalUserId(newGuestId);
     setMostrarEntry(false);
     setLoading(false);
@@ -561,6 +561,7 @@ const GuestPage = () => {
     return (
       <div className="container-guest screen">
         <h1 className="title-error">404</h1>
+        <h1 className="title-error">Error</h1>
       </div>
     );
 
