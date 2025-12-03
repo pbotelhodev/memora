@@ -22,6 +22,7 @@ import imgHero from "../assets/heroimg.png";
 import PostImage from "../assets/photo-post.jpg";
 import HalfImage from "../assets/half-image.png";
 import PhotoProfile from "../assets/photo-profile.jpg";
+import { Helmet } from "react-helmet-async";
 
 //Imports styles
 import "../styles/Header.css";
@@ -30,6 +31,10 @@ import "../styles/MainHome.css";
 function HomePage() {
   return (
     <div>
+      <Helmet>
+        <title>Memora | Sua Festa Social</title>
+        <meta name="description" content="Bem-vindo ao Memora" />
+      </Helmet>
       <Header />
       {/* ========== Main ========= */}
       <main>
