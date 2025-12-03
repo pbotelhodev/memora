@@ -1,4 +1,4 @@
-/* src/styles/GuestPage.css - FINAL E VERIFICADO */
+/* src/styles/GuestPage.css - FINAL E CORRIGIDO */
 
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap");
 
@@ -107,11 +107,11 @@ select {
   background-color: #20d8f7;
 }
 
-/* ===== 2. CONTAINER PRINCIPAL (APP SHELL) ===== */
+/* ===== 2. CONTAINER PRINCIPAL ===== */
 .container-guest {
   height: 100vh;
   width: 100%;
-  overflow: hidden; /* Trava o scroll AQUI */
+  overflow: hidden;
   background-image: linear-gradient(135deg, #0f172a, #2a0b70);
   background-color: #0f172a;
   color: white;
@@ -277,7 +277,7 @@ select {
 .card-image-wrapper {
   width: 100%;
   position: relative;
-  padding-bottom: 100%; /* QUADRADO */
+  padding-bottom: 100%;
   background-color: black;
   overflow: hidden;
 }
@@ -446,7 +446,7 @@ select {
   display: none !important;
 }
 
-/* ===== 6. PERFIL (LÁPIS FORCE VISIBLE) ===== */
+/* ===== 6. PERFIL (BOTÃO LÁPIS AJUSTADO) ===== */
 .profile-page-container {
   display: flex;
   flex-direction: column;
@@ -474,6 +474,7 @@ select {
   gap: 10px;
   margin-bottom: 5px;
   min-height: 40px;
+  position: relative; /* Garante contexto de posicionamento */
 }
 
 .profile-name {
@@ -482,24 +483,25 @@ select {
   line-height: 1;
 }
 
-/* Botão Lápis: FORCE VISIBILITY */
+/* Botão Lápis: FORÇADO A APARECER */
 .btn-edit-name {
   background: transparent !important;
   border: none;
-  color: #94a3b8; /* Cor padrão */
-  padding: 5px; /* Aumentei um pouco a área de toque */
+  color: #94a3b8; /* Cor Cinza */
+  padding: 8px; /* Área de clique maior */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.2s;
-  min-width: 30px; /* Garante que não suma */
-  height: 30px;
+  min-width: 32px; /* Garante que não colapse */
+  height: 32px;
 }
 .btn-edit-name:hover {
   color: #a855f7;
 }
 
+/* Input Edição */
 .input-edit-name {
   background: #0f172a;
   border: 1px solid #a855f7;

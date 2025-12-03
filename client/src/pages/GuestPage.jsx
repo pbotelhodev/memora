@@ -160,15 +160,13 @@ const GuestPage = () => {
       .from("fotos-eventos")
       .getPublicUrl(storagePath);
 
-    const { error } = await supabase
-      .from("fotos")
-      .insert([
-        {
-          festa_id: festa.id,
-          user_id: userData.user.id,
-          url: urlData.publicUrl,
-        },
-      ]);
+    const { error } = await supabase.from("fotos").insert([
+      {
+        festa_id: festa.id,
+        user_id: userData.user.id,
+        url: urlData.publicUrl,
+      },
+    ]);
 
     setLoading(false);
     if (!error) {
@@ -260,7 +258,6 @@ const GuestPage = () => {
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
 
-    // Proporção Vertical (4:5)
     const targetAspectRatio = 4 / 5;
 
     let cropWidth, cropHeight, dx, dy;
@@ -386,19 +383,17 @@ const GuestPage = () => {
 
     const { data: userData } = await supabase.auth.getUser();
     const newGuestId = nanoid(10);
-    const { error } = await supabase
-      .from("convidados")
-      .upsert(
-        [
-          {
-            auth_id: userData.user.id,
-            local_nano_id: newGuestId,
-            festa_id: festa.id,
-            nome: nomeConvidado,
-          },
-        ],
-        { onConflict: "auth_id" }
-      );
+    const { error } = await supabase.from("convidados").upsert(
+      [
+        {
+          auth_id: userData.user.id,
+          local_nano_id: newGuestId,
+          festa_id: festa.id,
+          nome: nomeConvidado,
+        },
+      ],
+      { onConflict: "auth_id" }
+    );
 
     if (error) {
       setLoading(false);
@@ -417,7 +412,7 @@ const GuestPage = () => {
         await atualizarFotoPerfilConvidado(data.publicUrl);
       }
     }
-    // Chave do localStorage atualizada aqui
+    // Chave ATUALIZADA
     localStorage.setItem("memora_guest_nanoID", newGuestId);
     setLocalUserId(newGuestId);
     setMostrarEntry(false);
@@ -477,7 +472,7 @@ const GuestPage = () => {
   useEffect(() => {
     if (!slug) return;
     buscarFesta();
-    // Chave do localStorage atualizada aqui
+    // Chave ATUALIZADA
     const savedId = localStorage.getItem("memora_guest_nanoID");
     if (savedId) {
       setLocalUserId(savedId);
@@ -563,7 +558,7 @@ const GuestPage = () => {
     );
   }
 
-  // CORRIGIDO AQUI: Apenas um 404
+  // CORRIGIDO: APENAS UM 404
   if (erro)
     return (
       <div className="container-guest screen">
@@ -749,7 +744,6 @@ const GuestPage = () => {
                 ) : (
                   <div className="profile-name-edit-wrapper">
                     <h2 className="profile-name">{dadosPerfil.nome}</h2>
-                    {/* Botão de Lápis agora tem classe para ser visível */}
                     <button
                       onClick={handleEditClick}
                       className="btn-edit-name"
@@ -830,4 +824,3 @@ const GuestPage = () => {
 };
 
 export default GuestPage;
-
