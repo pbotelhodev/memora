@@ -55,13 +55,13 @@ const DashboardPage = () => {
   // --- FUNÇÕES DE AÇÃO ---
   const handleCopyLink = () => {
     // Copia o link público da festa (não o do painel)
-    const linkFesta = `https://www.appmemora/feed/${slug}`;
+    const linkFesta = `${window.location.origin}/feed/${slug}`;
     navigator.clipboard.writeText(linkFesta);
     alert("Link da festa copiado!");
   };
 
   const handleWhatsappShare = () => {
-    const linkFesta = `https://www.appmemora/feed/${slug}`;
+    const linkFesta = `${window.location.origin}/feed/${slug}`;
     const texto = `Galera, acesse a minah rede social por aqui: ${linkFesta}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`);
   };
@@ -200,7 +200,7 @@ const DashboardPage = () => {
               <>
                 <div className="qr-box">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://usememora.com.br/${eventData.slug}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://www.usememora.com.br/${eventData.slug}`}
                     alt="QR Code"
                   />
                 </div>
@@ -213,7 +213,7 @@ const DashboardPage = () => {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    memora.com/festa/{slug}
+                    usememora.com/feed/{slug}
                   </span>
                   <button className="btn-icon" onClick={handleCopyLink}>
                     <Copy size={18} />
