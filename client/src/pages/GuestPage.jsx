@@ -694,7 +694,7 @@ const GuestPage = () => {
                       onClick={handleLoadMore}
                       disabled={loadingMore}
                     >
-                      {loadingMore ? "Buscando..." : "Ver mais fotos antigas"}
+                      {loadingMore ? "Buscando..." : "Ver mais fotos"}
                     </button>
                   </div>
                 )}
