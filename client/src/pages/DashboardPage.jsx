@@ -200,7 +200,7 @@ const DashboardPage = () => {
               <>
                 <div className="qr-box">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://www.usememora.com.br/${eventData.slug}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://www.appmemora.com.br/${eventData.slug}`}
                     alt="QR Code"
                   />
                 </div>
@@ -213,7 +213,7 @@ const DashboardPage = () => {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    usememora.com/feed/{slug}
+                    appmemora.com.br/feed/{slug}
                   </span>
                   <button className="btn-icon" onClick={handleCopyLink}>
                     <Copy size={18} />
