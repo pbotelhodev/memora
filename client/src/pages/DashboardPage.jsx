@@ -200,7 +200,7 @@ const DashboardPage = () => {
               <>
                 <div className="qr-box">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://www.appmemora.com.br/${eventData.slug}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://www.appmemora.com.br/feed/${eventData.slug}`}
                     alt="QR Code"
                   />
                 </div>
