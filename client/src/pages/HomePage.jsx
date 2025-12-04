@@ -39,7 +39,7 @@ function HomePage() {
       {/* ========== Main ========= */}
       <main>
         {/* ========== Hero ========= */}
-        <section className="hero-section .bg-base">
+        <section className="hero-section">
           <div className="container-main-home">
             <div className="hero-left">
               <div className="hero-title-area">
