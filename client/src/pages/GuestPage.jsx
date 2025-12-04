@@ -22,9 +22,6 @@ import poweredImage from "../assets/powered-memora.png";
 const GuestPage = () => {
   const { slug } = useParams();
 
-  // --- CONTROLE DE BRANDING ---
-  const [ativarBrandingMemora, setAtivarBrandingMemora] = useState(false);
-
   // --- ESTADOS ---
   const [localUserId, setLocalUserId] = useState(null);
   const [nomeConvidado, setNomeConvidado] = useState("");
@@ -40,6 +37,12 @@ const GuestPage = () => {
   const [festa, setFesta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
+
+  // --- PAGINAÇÃO ---
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 50;
 
   // Navegação
   const [abaAtiva, setAbaAtiva] = useState("feed");
@@ -110,16 +113,43 @@ const GuestPage = () => {
     return data.path;
   };
 
-  const buscarFotosDoFeed = async () => {
+  // --- BUSCA DO FEED COM PAGINAÇÃO ---
+  const buscarFotosDoFeed = async (pageNumber = 0) => {
     if (!festa?.id) return;
 
-    const { data: fotosData } = await supabase
+    if (pageNumber === 0) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
+    const from = pageNumber * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data: fotosData, error } = await supabase
       .from("fotos")
       .select("*")
       .eq("festa_id", festa.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error("Erro feed:", error);
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
+
+    if (fotosData.length < PAGE_SIZE) {
+      setHasMore(false);
+    } else {
+      setHasMore(true);
+    }
+
     if (!fotosData || fotosData.length === 0) {
-      setFotosFeed([]);
+      if (pageNumber === 0) setFotosFeed([]);
+      setLoading(false);
+      setLoadingMore(false);
       return;
     }
 
@@ -129,14 +159,33 @@ const GuestPage = () => {
       .select("auth_id, nome, foto_perfil_url")
       .in("auth_id", userIds);
 
-    const feedCompleto = fotosData.map((foto) => {
+    const feedMapeado = fotosData.map((foto) => {
       const autor = autoresData?.find((a) => a.auth_id === foto.user_id);
       return {
         ...foto,
         convidados: autor || { nome: "Convidado", foto_perfil_url: null },
       };
     });
-    setFotosFeed(feedCompleto);
+
+    if (pageNumber === 0) {
+      setFotosFeed(feedMapeado);
+    } else {
+      setFotosFeed((prev) => [...prev, ...feedMapeado]);
+    }
+
+    setPage(pageNumber);
+    setLoading(false);
+    setLoadingMore(false);
+  };
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    buscarFotosDoFeed(nextPage);
+  };
+
+  const handleRefresh = () => {
+    setPage(0);
+    buscarFotosDoFeed(0);
   };
 
   const buscarFotosDoPerfil = async () => {
@@ -172,52 +221,67 @@ const GuestPage = () => {
     setLoading(false);
     if (!error) {
       setAbaAtiva("feed");
-      await buscarFotosDoFeed();
+      handleRefresh();
     }
   };
 
+  // --- DOWNLOAD COM MARCA D'ÁGUA (UPDATED) ---
   const handleDownloadFoto = (url) => {
     const img = new window.Image();
-    img.crossOrigin = "anonymous";
+    img.crossOrigin = "anonymous"; // Essencial para baixar do Supabase
     img.src = url;
-    document.title = "Preparando...";
+    document.title = "Preparando Download...";
 
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
 
+      // Define o tamanho do canvas igual ao da imagem original
       canvas.width = img.width;
       canvas.height = img.height;
+
+      // 1. Desenha a foto original
       ctx.drawImage(img, 0, 0);
 
-      if (ativarBrandingMemora) {
-        const watermark = new window.Image();
-        watermark.src = poweredImage;
-        watermark.crossOrigin = "anonymous";
+      // 2. Prepara a Marca D'água
+      const watermark = new window.Image();
+      watermark.src = poweredImage;
+      watermark.crossOrigin = "anonymous";
 
-        watermark.onload = () => {
-          const wmWidth = canvas.width * 0.3;
-          const aspectRatio = watermark.height / watermark.width;
-          const wmHeight = wmWidth * aspectRatio;
-          const x = (canvas.width - wmWidth) / 2;
-          const y = canvas.height - wmHeight - 30;
+      watermark.onload = () => {
+        // Lógica de posicionamento (30% da largura, centralizado embaixo)
+        const wmWidth = canvas.width * 0.3;
+        const aspectRatio = watermark.height / watermark.width;
+        const wmHeight = wmWidth * aspectRatio;
 
-          ctx.shadowColor = "rgba(0,0,0,0.5)";
-          ctx.shadowBlur = 15;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 4;
+        const x = (canvas.width - wmWidth) / 2;
+        const y = canvas.height - wmHeight - 30; // 30px de margem inferior
 
-          ctx.drawImage(watermark, x, y, wmWidth, wmHeight);
-          saveCanvas(canvas);
-        };
-        watermark.onerror = () => saveCanvas(canvas);
-      } else {
+        // Sombra suave para destacar se o fundo for claro
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+
+        // Desenha a marca d'água
+        ctx.drawImage(watermark, x, y, wmWidth, wmHeight);
+
+        // Salva o resultado
         saveCanvas(canvas);
-      }
+      };
+
+      // Se a marca d'água falhar (não carregar), baixa a foto sem ela mesmo
+      watermark.onerror = () => {
+        console.warn(
+          "Não foi possível carregar a marca d'água. Baixando original."
+        );
+        saveCanvas(canvas);
+      };
     };
+
     img.onerror = () => {
-      alert("Erro na imagem.");
-      saveOriginal(url);
+      alert("Erro ao processar imagem.");
+      saveOriginal(url); // Fallback: baixa o link direto
     };
   };
 
@@ -236,7 +300,7 @@ const GuestPage = () => {
         document.title = "Memora";
       },
       "image/jpeg",
-      0.95
+      0.95 // Qualidade JPG
     );
   };
 
@@ -415,7 +479,6 @@ const GuestPage = () => {
         await atualizarFotoPerfilConvidado(data.publicUrl);
       }
     }
-    // Chave ATUALIZADA
     localStorage.setItem("memora_guest_nanoID", newGuestId);
     setLocalUserId(newGuestId);
     setMostrarEntry(false);
@@ -475,7 +538,6 @@ const GuestPage = () => {
   useEffect(() => {
     if (!slug) return;
     buscarFesta();
-    // Chave ATUALIZADA
     const savedId = localStorage.getItem("memora_guest_nanoID");
     if (savedId) {
       setLocalUserId(savedId);
@@ -506,7 +568,7 @@ const GuestPage = () => {
         .catch((e) => console.error("Erro Cam:", e));
     }
     if (festa?.id && localUserId) {
-      if (abaAtiva === "feed") buscarFotosDoFeed();
+      if (abaAtiva === "feed") buscarFotosDoFeed(0);
       if (abaAtiva === "perfil") {
         carregarDadosConvidado().then((d) => d && setDadosPerfil(d));
         buscarFotosDoPerfil();
@@ -561,7 +623,6 @@ const GuestPage = () => {
     );
   }
 
-  // CORRIGIDO: APENAS UM 404
   if (erro)
     return (
       <div className="container-guest screen">
@@ -581,7 +642,7 @@ const GuestPage = () => {
       {abaAtiva === "feed" && (
         <header className="header-party">
           <h1 className="header-gradient-title">{festa?.nome_festa}</h1>
-          <button className="btn-refresh" onClick={buscarFotosDoFeed}>
+          <button className="btn-refresh" onClick={handleRefresh}>
             <RefreshCw size={20} color="currentColor" />
           </button>
         </header>
@@ -590,7 +651,10 @@ const GuestPage = () => {
       <main className="app-content">
         {abaAtiva === "feed" && (
           <div className="feed-container">
-            {loading && <p className="loading-text">Carregando...</p>}
+            {loading && fotosFeed.length === 0 && (
+              <p className="loading-text">Carregando...</p>
+            )}
+
             {!loading && fotosFeed.length > 0 ? (
               <div className="photos-list-column">
                 {fotosFeed.map((foto) => (
@@ -622,9 +686,22 @@ const GuestPage = () => {
                     </div>
                   </div>
                 ))}
+
+                {hasMore && (
+                  <div className="load-more-container">
+                    <button
+                      className="btn-load-more"
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? "Buscando..." : "Ver mais fotos antigas"}
+                    </button>
+                  </div>
+                )}
+                {!hasMore && <p className="end-of-feed">Você viu tudo! 🎉</p>}
               </div>
             ) : (
-              <p className="no-photos">Seja o primeiro a postar!</p>
+              !loading && <p className="no-photos">Seja o primeiro a postar!</p>
             )}
           </div>
         )}
@@ -719,7 +796,6 @@ const GuestPage = () => {
                   )}
                 </div>
 
-                {/* LÓGICA DE EDIÇÃO DE NOME */}
                 {isEditingName ? (
                   <div className="profile-name-edit-wrapper">
                     <input

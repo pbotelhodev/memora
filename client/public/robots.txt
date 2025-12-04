@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://appmemora.com.br/sitemap.xml
