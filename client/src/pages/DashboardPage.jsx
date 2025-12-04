@@ -12,7 +12,6 @@ import {
   Lock,
   Clock,
 } from "lucide-react";
-import Header from "../components/Header";
 import "../styles/DashboardPage.css";
 
 const DashboardPage = () => {
@@ -56,13 +55,13 @@ const DashboardPage = () => {
   // --- FUNÇÕES DE AÇÃO ---
   const handleCopyLink = () => {
     // Copia o link público da festa (não o do painel)
-    const linkFesta = `${window.location.origin}/feed/${slug}`;
+    const linkFesta = `https://www.appmemora/feed/${slug}`;
     navigator.clipboard.writeText(linkFesta);
     alert("Link da festa copiado!");
   };
 
   const handleWhatsappShare = () => {
-    const linkFesta = `${window.location.origin}/feed/${slug}`;
+    const linkFesta = `https://www.appmemora/feed/${slug}`;
     const texto = `Galera, acesse a minah rede social por aqui: ${linkFesta}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`);
   };
