@@ -4,7 +4,7 @@
 
 /* Container Geral */
 .dashboard-container {
-  background-color: #0f172a;
+  background-color: #0f172a; /* Slate-900 */
   min-height: 100vh;
   color: white;
   padding-top: 10px;
@@ -60,7 +60,7 @@
   padding: 5px;
 }
 
-/* --- BARRA DE STATUS --- */
+/* --- BARRA DE STATUS E TÍTULO --- */
 .event-status-bar {
   display: flex;
   flex-direction: column;
@@ -73,6 +73,8 @@
   color: #94a3b8;
   font-size: 0.85rem;
 }
+
+/* Título (Visualização) */
 .event-info h1 {
   font-size: 1.8rem;
   background: linear-gradient(90deg, #ffffff, #cbd5e1);
@@ -81,6 +83,90 @@
   margin: 0;
   line-height: 1.2;
 }
+
+/* --- EDIÇÃO DE NOME (LÁPIS E INPUT) --- */
+.title-display-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-edit-pencil {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #64748b;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  padding: 0px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit-pencil:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #a855f7;
+  border-color: #a855f7;
+}
+
+/* Wrapper do modo edição */
+.edit-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+  width: 100%;
+}
+
+.input-title-edit {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #a855f7;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  outline: none;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-icon-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  padding: 0px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn-icon-action.save {
+  background-color: #10b981; /* Verde Sucesso */
+  color: white;
+}
+
+.btn-icon-action.cancel {
+  background-color: #ef4444; /* Vermelho Cancelar */
+  color: white;
+}
+
+.btn-icon-action:hover {
+  transform: scale(1.1);
+}
+
+/* --- FIM EDIÇÃO --- */
 
 .status-badge {
   align-self: flex-start;
@@ -147,12 +233,11 @@
   background-color: #0f172a;
   border: 1px solid #334155;
   border-radius: 12px;
-  /* Padding assimétrico: Mais espaço na esquerda pro texto, menos na direita pro botão */
   padding: 6px 6px 6px 15px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px; /* Espaço entre texto e botão */
+  gap: 10px;
   margin-bottom: 15px;
   width: 100%;
 }
@@ -160,51 +245,33 @@
 .link-box span {
   color: #94a3b8;
   font-size: 0.85rem;
-  /* Truque para cortar o texto com '...' se for muito grande */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1; /* Ocupa todo o espaço disponível */
+  flex: 1;
 }
 
-/* Estilo do Botão Gradiente Pequeno */
+/* Botão Copiar Pequeno */
 .link-box button {
-  background: linear-gradient(
-    135deg,
-    #a855f7,
-    #06b6d4
-  ); /* O Gradiente Roxo/Azul */
+  background: linear-gradient(135deg, #a855f7, #06b6d4);
   border: none;
   border-radius: 8px;
-  width: 36px; /* Tamanho fixo quadrado */
-  height: 36px; /* Tamanho fixo quadrado */
+  width: 36px;
+  height: 36px;
   display: flex;
-padding: 0px;
+  padding: 0px;
   align-items: center;
   justify-content: center;
   color: white;
   cursor: pointer;
-  flex-shrink: 0; /* IMPORTANTE: Impede o botão de deformar */
+  flex-shrink: 0;
   transition: transform 0.2s, opacity 0.2s;
   box-shadow: 0 2px 10px rgba(168, 85, 247, 0.3);
-  
 }
 
 .link-box button:hover {
   transform: scale(1.05);
   opacity: 0.9;
-}
-
-.link-box button svg {
-  width: 18px;
-  height: 18px;
-}
-
-.btn-icon {
-  background: none;
-  border: none;
-  color: #a855f7;
-  cursor: pointer;
 }
 
 .btn-outline {
@@ -216,6 +283,14 @@ padding: 0px;
   border-radius: 10px;
   font-weight: 600;
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-outline:hover {
+  background: rgba(168, 85, 247, 0.1);
 }
 
 /* --- CARD 2: AÇÕES --- */
@@ -234,23 +309,28 @@ padding: 0px;
   border: none;
   text-align: left;
   width: 100%;
-  position: relative; /* Importante para ícones absolutos se precisar */
+  position: relative;
 }
 
 .btn-tv {
   background: linear-gradient(90deg, #a855f7 0%, #06b6d4 100%);
   color: white;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.btn-tv:hover {
+  transform: translateY(-3px);
 }
 
 .btn-share {
-  background-color: #065f46; /* fallback */
-  background: linear-gradient(
-    90deg,
-    #06b6d4 0%,
-    #0ea5e9 100%
-  ); /* Ajustado pro seu print azul */
+  background: linear-gradient(90deg, #06b6d4 0%, #0ea5e9 100%);
   color: white;
   border: none;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.btn-share:hover {
+  transform: translateY(-3px);
 }
 
 .action-text h3 {
@@ -263,8 +343,7 @@ padding: 0px;
   opacity: 0.9;
 }
 
-/* --- NOVOS ESTILOS (ZIP & TV) --- */
-/* Botões de Download */
+/* Botões de Download ZIP */
 .zip-area {
   width: 100%;
 }
@@ -281,6 +360,7 @@ padding: 0px;
   text-align: left;
   width: 100%;
   transition: all 0.2s;
+  cursor: pointer;
 }
 .btn-zip-active:hover {
   background: rgba(255, 255, 255, 0.05);
@@ -301,79 +381,152 @@ padding: 0px;
   cursor: not-allowed;
 }
 
-/* MODO TELÃO (TV OVERLAY) - Mantido igual */
+/* ==========================================================================
+   MODO TELÃO (TV OVERLAY PREMIUM)
+   ========================================================================== */
+
 .tv-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: #000;
+  background-color: #000; /* Fundo preto cinema */
   z-index: 9999;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
 }
+
+/* --- CAMADA 1: FOTO (No fundo) --- */
 .tv-slide-container {
   width: 100%;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
 }
+
 .tv-image {
   max-width: 100%;
-  max-height: 90vh;
+  max-height: 100vh;
   object-fit: contain;
+  /* Sombra leve para destacar se o fundo for escuro */
+  filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
   animation: fadeIn 1s ease-in-out;
 }
-.tv-controls {
+
+/* --- CAMADA 2: UI (Botões e Logos) --- */
+.tv-ui-layer {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  left: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  z-index: 100;
-  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10; /* Fica ACIMA da foto */
+  pointer-events: none; /* Permite clicar através da camada onde não tem botão */
+  padding: 30px;
+  display: grid;
+  /* Grid para posicionar Logo, Botão e QR */
+  grid-template-areas:
+    "logo close"
+    ". ."
+    ". qr";
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr auto;
 }
-.tv-controls > * {
+
+/* LOGO (Topo Esquerda) */
+.tv-logo-area {
+  grid-area: logo;
   pointer-events: auto;
 }
-.btn-close-tv {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 10px;
-  border-radius: 50%;
-  cursor: pointer;
-  backdrop-filter: blur(5px);
+.tv-logo-area img {
+  height: 60px; /* Ajuste conforme tamanho do seu logo */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
-.tv-qr-corner {
-  background: white;
-  padding: 8px;
-  border-radius: 12px;
+
+/* BOTÃO FECHAR (Topo Direita - Estilo Vidro/Translúcido) */
+.btn-close-tv {
+  grid-area: close;
+  justify-self: end; /* Alinha na direita */
+  pointer-events: auto;
+
+  /* Efeito Vidro */
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  padding: 0px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-close-tv:hover {
+  background: rgba(239, 68, 68, 0.8); /* Vermelho ao passar o mouse */
+  transform: scale(1.1);
+  border-color: transparent;
+}
+
+/* QR CODE CARD (Baixo Direita - Card Branco) */
+.tv-qr-card {
+  grid-area: qr;
+  justify-self: end;
+  align-self: end;
+  pointer-events: auto;
+
+  background: rgba(255, 255, 255, 0.95);
+  padding: 15px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  animation: slideUp 0.5s ease-out;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
+  max-width: 180px;
 }
-.tv-qr-corner img {
-  width: 80px;
-  height: 80px;
+
+.tv-qr-card p {
+  color: #6b21a8; /* Roxo da marca */
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin: 0;
+  text-transform: uppercase;
 }
-.tv-qr-corner span {
-  font-size: 0.7rem;
-  font-weight: bold;
-  color: #0f172a;
+
+.tv-qr-card img {
+  width: 120px;
+  height: 120px;
+  border-radius: 5px;
 }
+
+.tv-qr-card span {
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* TELA DE ESPERA */
 .tv-empty {
   color: #64748b;
   text-align: center;
+  z-index: 5;
 }
 
+/* ANIMAÇÕES GERAIS */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -382,6 +535,16 @@ padding: 0px;
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 @keyframes pulse {
@@ -406,7 +569,7 @@ padding: 0px;
 
 /* ==========================================================================
    DESKTOP (1024px +)
-   AQUI ESTÁ A CORREÇÃO DO LAYOUT
+   AQUI ESTÁ A CORREÇÃO DO GRID PRINCIPAL
    ========================================================================== */
 
 @media (min-width: 1024px) {
@@ -439,40 +602,40 @@ padding: 0px;
     margin: auto 0px;
   }
 
-  /* --- O FIX DO GRID ESTÁ AQUI --- */
+  /* Grid Principal Lado a Lado */
   .dashboard-grid {
     display: grid;
-    /* Coluna Esquerda (QR): 1 fração (~30%) | Coluna Direita (Ações): 2 frações (~70%) */
+    /* Coluna Esquerda (QR): 350px | Coluna Direita (Ações): O resto */
     grid-template-columns: 350px 1fr;
     gap: 30px;
-    align-items: start; /* Alinha no topo */
+    align-items: start;
   }
 
-  /* Ajuste no Card de Ações para ficar bonito */
   .actions-card {
-    height: 100%; /* Ocupa a altura disponível se precisar */
+    height: 100%;
     justify-content: flex-start;
   }
 
   .dash-card {
     padding: 30px;
   }
-
+  .zip-area {
+    height: 30%;
+  }
+  
   .qr-box img {
     width: 180px;
     height: 180px;
-  }
-
-  .btn-action {
     padding: 30px;
-    gap: 20px;
-    transition: transform 0.2s;
   }
-  .btn-action:hover {
-    transform: translateY(-5px);
-    cursor: pointer;
-  }
-  .action-text h3 {
+  .zip .action-text h3 {
     font-size: 1.3rem;
+  }
+  /* Ajuste do Input de Edição no Desktop */
+  .edit-title-wrapper {
+    flex-direction: row;
+  }
+  .input-title-edit {
+    font-size: 2rem;
   }
 }
