@@ -17,7 +17,7 @@ import { maskCardNumber, maskCardExpiry, maskCVV } from "../utils/mask"; // Suas
 import "../styles/PaymentModal.css";
 
 // URL da API (Ngrok)
-const API_URL = "https://hypogeous-uninquisitive-ally.ngrok-free.dev";
+const API_URL = "https://api-memora.onrender.com";
 
 const PaymentModal = ({ isOpen, onClose, paymentData }) => {
   const navigate = useNavigate();
