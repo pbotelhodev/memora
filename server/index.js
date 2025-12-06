@@ -156,6 +156,13 @@ app.get("/", (req, res) => {
 // Define a porta (usa a do .env ou a 5000)
 const PORT = process.env.PORT || 5000;
 
+onsole.log("--- DEBUG ASAAS ---");
+console.log("URL usada:", process.env.ASAAS_URL); // ou a variável que você usa
+console.log(
+  "Chave começa com:",
+  process.env.ASAAS_KEY ? process.env.ASAAS_KEY.substring(0, 15) : "SEM CHAVE"
+);
+
 // --- ROTA DE WEBHOOK (O Asaas chama isso aqui) ---
 app.post("/webhook", async (req, res) => {
   try {

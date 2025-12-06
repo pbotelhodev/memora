@@ -161,7 +161,7 @@ const DashboardPage = () => {
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `memora-${slug}-completo.zip`);
     } catch (error) {
-      alert("Erro ao gerar ZIP.");
+      alert("Erro ao gerar ZIP.", error);
     } finally {
       setDownloading(false);
     }
@@ -179,7 +179,7 @@ const DashboardPage = () => {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.warn("Erro img:", url);
+      console.warn("Erro img:", url, error);
       return null;
     }
   };
@@ -197,7 +197,7 @@ const DashboardPage = () => {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.warn("Erro font:", url);
+      console.warn("Erro font:", url, error);
       return null;
     }
   };
