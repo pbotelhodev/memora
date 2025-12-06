@@ -1,213 +1,162 @@
-const express = require("express");
-
-// 2. O CORS é o "Segurança". Ele deixa o seu site (localhost:5173) falar com esse servidor.
-const cors = require("cors");
-
-//const axios = require('axios');
-const axios = require("axios");
-
-//4. O Dotenv é o "Chaveiro".
 require("dotenv").config();
-
-/// Importe o cliente do Supabase no TOPO do arquivo, junto com os outros requires
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
 const { createClient } = require("@supabase/supabase-js");
 
-// Inicialize o Supabase com a chave SECRETA (Admin)
-const supabaseAdmin = createClient(
+const app = express();
+
+// --- CONFIGURAÇÕES ---
+app.use(cors());
+app.use(express.json()); // OBRIGATÓRIO PARA LER O BODY DO ASAAS
+
+// Configuração do Supabase (Para o Webhook usar)
+const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
-/* Cria o app */
-const app = express();
+// URL do Asaas (Produção ou Sandbox dependendo do .env)
+const ASAAS_URL = process.env.ASAAS_URL;
+const ASAAS_KEY = process.env.ASAAS_KEY;
 
-// CONFIGURAÇÕES OBRIGATÓRIAS:
-// Diz pro servidor entender JSON (quando o React mandar dados)
-app.use(express.json());
-// Diz pro servidor aceitar conexões de fora (do seu Front-end)
-app.use(cors());
-
-// --- CONFIGURAÇÃO DO AXIOS (O Telefone do Asaas) ---
-const asaasApi = axios.create({
-  baseURL: process.env.ASAAS_URL, // Vai ler do seu arquivo .env
-  headers: {
-    access_token: process.env.ASAAS_KEY, // Vai ler a chave $aact...
-  },
-});
-
-// --- ROTA DE PAGAMENTO PIX ---
+// --- ROTA 1: CRIAR PAGAMENTO (O que o seu site chama) ---
 app.post("/criar-pagamento", async (req, res) => {
   try {
-    // 1. Recebe e Blinda os dados
-    const { nome, cpf, email, valor, tipo, card, cep, numero, phone } =
-      req.body;
-    //Log de conferência
-    console.log("--> CHEGOU NO SERVER:", { nome, tipo, cep });
+    const { nome, cpf, valor, tipo, cep, numero, phone } = req.body;
 
-    // Garante que nada é undefined antes de usar .replace
-    const cpfString = cpf || "";
-    const cepString = cep || "39400000"; // Valor padrão se vier vazio
-    const phoneString = phone || "99999999999"; // Valor padrão
-    const numeroString = numero || "SN";
+    // Cabeçalhos padrão do Asaas
+    const headers = {
+      "Content-Type": "application/json",
+      access_token: ASAAS_KEY,
+    };
 
-    // Limpa os dados com segurança
-    const cpfLimpo = cpfString.replace(/\D/g, "");
-    const cepLimpo = cepString.replace(/\D/g, "");
-    const phoneLimpo = phoneString.replace(/\D/g, "");
+    // 1. Criar ou Buscar Cliente no Asaas
+    // (Simplificação: Cria um novo sempre ou busca pelo CPF se quiser melhorar depois)
+    const clienteResponse = await axios.post(
+      `${ASAAS_URL}/customers`,
+      {
+        name: nome,
+        cpfCnpj: cpf,
+        mobilePhone: phone || undefined,
+        postalCode: cep || undefined,
+        addressNumber: numero || undefined,
+      },
+      { headers }
+    );
 
-    console.log("--> Pedido recebido:", { nome, valor, tipo, cep: cepLimpo });
-
-    // --- 1. Se for GRÁTIS ---
-    if (valor <= 0) {
-      return res.json({
-        sucesso: true,
-        isFree: true,
-        pagamentoId: "FREE_" + Date.now(),
-      });
-    }
-
-    // --- 2. Criar Cliente no Asaas ---
-    const clienteResponse = await asaasApi.post("/customers", {
-      name: nome,
-      cpfCnpj: cpfLimpo,
-      email: email,
-      notificationDisabled: false,
-    });
     const clienteId = clienteResponse.data.id;
 
-    // --- 3. Montar Objeto de Cobrança ---
-    let cobrancaData = {
+    // 2. Criar a Cobrança
+    const cobrancaBody = {
       customer: clienteId,
       billingType: tipo, // 'PIX' ou 'CREDIT_CARD'
       value: valor,
-      dueDate: new Date().toISOString().split("T")[0],
+      dueDate: new Date().toISOString().split("T")[0], // Vence hoje
       description: "Plano Memora Infinity",
     };
 
-    // --- 4. SE FOR CARTÃO ---
-    if (tipo === "CREDIT_CARD") {
-      // Validação extra de segurança para o cartão
-      if (!card || !card.holderName || !card.number) {
-        return res
-          .status(400)
-          .json({ sucesso: false, erro: "Dados do cartão incompletos" });
-      }
-
-      cobrancaData = {
-        ...cobrancaData,
-        creditCard: {
-          holderName: card.holderName,
-          number: card.number,
-          expiryMonth: card.expiryMonth,
-          expiryYear: card.expiryYear, // Já corrigimos o ano 2020 antes
-          ccv: card.ccv,
-        },
-        creditCardHolderInfo: {
-          name: nome,
-          email: email,
-          cpfCnpj: cpfLimpo,
-          postalCode: cepLimpo,
-          addressNumber: numeroString,
-          phone: phoneLimpo,
-        },
+    // Se for cartão, adiciona os dados
+    if (tipo === "CREDIT_CARD" && req.body.card) {
+      cobrancaBody.creditCard = req.body.card;
+      cobrancaBody.creditCardHolderInfo = {
+        name: req.body.card.holderName,
+        email: req.body.email,
+        cpfCnpj: cpf,
+        postalCode: cep,
+        addressNumber: numero,
+        phone: phone, // Obrigatório para cartão
       };
     }
 
-    // --- 5. ENVIAR ---
-    const cobrancaResponse = await asaasApi.post("/payments", cobrancaData);
-    const idCobranca = cobrancaResponse.data.id;
-    const status = cobrancaResponse.data.status;
+    const cobrancaResponse = await axios.post(
+      `${ASAAS_URL}/payments`,
+      cobrancaBody,
+      { headers }
+    );
+    const pagamento = cobrancaResponse.data;
 
-    // --- 6. RESPOSTA ---
+    // 3. Se for Pix, pega o QR Code
+    let resultado = {
+      sucesso: true,
+      pagamentoId: pagamento.id,
+      tipo: tipo,
+      status: pagamento.status,
+    };
+
     if (tipo === "PIX") {
-      const qrCodeResponse = await asaasApi.get(
-        `/payments/${idCobranca}/pixQrCode`
+      const qrResponse = await axios.get(
+        `${ASAAS_URL}/payments/${pagamento.id}/pixQrCode`,
+        { headers }
       );
-      res.json({
-        sucesso: true,
-        tipo: "PIX",
-        pagamentoId: idCobranca,
-        pixCopiaCola: qrCodeResponse.data.payload,
-        qrCodeImagem: qrCodeResponse.data.encodedImage,
-      });
-    } else {
-      res.json({
-        sucesso: true,
-        tipo: "CREDIT_CARD",
-        pagamentoId: idCobranca,
-        status: status,
-      });
+      resultado.qrCodeImagem = qrResponse.data.encodedImage;
+      resultado.pixCopiaCola = qrResponse.data.payload;
     }
+
+    res.json(resultado);
   } catch (error) {
-    console.error("ERRO ASAAS:", error.response?.data || error.message);
+    console.error(
+      "Erro ao criar pagamento:",
+      error.response?.data || error.message
+    );
     res.status(500).json({
       sucesso: false,
       erro:
         error.response?.data?.errors?.[0]?.description ||
-        "Erro no processamento",
+        "Erro interno no servidor",
     });
   }
 });
 
-// Quando alguém acessar a rota raiz ('/'), responda isso:
-app.get("/", (req, res) => {
-  res.send("Backend do Memora está rodando! 🚀");
-});
-// Define a porta (usa a do .env ou a 5000)
-const PORT = process.env.PORT || 5000;
-
-console.log("--- DEBUG ASAAS ---");
-console.log("URL usada:", process.env.ASAAS_URL); // ou a variável que você usa
-console.log(
-  "Chave começa com:",
-  process.env.ASAAS_KEY ? process.env.ASAAS_KEY.substring(0, 15) : "SEM CHAVE"
-);
-
-// --- ROTA DE WEBHOOK (O Asaas chama isso aqui) ---
-app.post("/webhook", async (req, res) => {
+// --- ROTA 2: WEBHOOK (O que o Asaas chama) ---
+// ESSA É A ROTA QUE ESTAVA FALTANDO OU DANDO 404
+app.post("/webhook/asaas", async (req, res) => {
   try {
     const evento = req.body;
 
-    // Log para você ver o que está chegando
-    console.log(
-      "🔔 Webhook recebeu:",
-      evento.event,
-      "| ID Pagamento:",
-      evento.payment.id
-    );
+    // Log para você ver no Render que chegou
+    console.log("🔔 Webhook recebeu evento:", evento.event);
 
-    // Se o evento for "PAGAMENTO RECEBIDO" ou "CONFIRMADO"
+    // Verifica se o pagamento foi recebido ou confirmado
     if (
       evento.event === "PAYMENT_RECEIVED" ||
       evento.event === "PAYMENT_CONFIRMED"
     ) {
-      const idPagamentoAsaas = evento.payment.id;
+      const idPagamentoAsaas = evento.payment.id; // Ex: pay_pel1bdf6u3zfsr7r
 
-      // Atualiza o status no Banco de Dados
-      const { data, error } = await supabaseAdmin
+      console.log(
+        `💰 Pagamento ${idPagamentoAsaas} Aprovado! Liberando festa...`
+      );
+
+      // Atualiza o status no Supabase
+      const { data, error } = await supabase
         .from("festas")
-        .update({ status: "ATIVO" }) // Libera o acesso!
-        .eq("asaas_id", idPagamentoAsaas); // Procura pela festa com esse pagamento
+        .update({ status: "SISTEMA NO AR" })
+        .eq("asaas_id", idPagamentoAsaas);
 
       if (error) {
-        console.error("Erro ao atualizar banco:", error);
-        return res.status(500).send("Erro interno");
+        console.error("❌ Erro ao atualizar Supabase:", error);
+        // Não retorna erro 500 aqui para não travar o Asaas, mas loga o erro
+      } else {
+        console.log("✅ Festa liberada com sucesso no banco!");
       }
-
-      console.log("✅ Festa liberada com sucesso!");
     }
 
-    // Responde pro Asaas que entendeu (obrigatório)
-    res.json({ received: true });
+    // SEMPRE responder 200 OK para o Asaas parar de mandar
+    res.status(200).json({ received: true });
   } catch (error) {
-    console.error("Erro no Webhook:", error);
-    res.status(500).json({ error: "Erro processando webhook" });
+    console.error("🔥 Erro crítico no Webhook:", error);
+    // Aqui retornamos 500 porque foi erro de código nosso
+    res.status(500).send("Erro interno");
   }
 });
 
-// Inicia o servidor
-app.listen(PORT, () => {
-  console.log(`✅ Servidor rodando na porta ${PORT}`);
+// --- ROTA DE TESTE (Pra saber se o servidor tá vivo) ---
+app.get("/", (req, res) => {
+  res.send("API Memora rodando 🚀");
 });
 
-/* ========================================================================== */
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
