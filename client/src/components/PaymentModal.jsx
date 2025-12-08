@@ -9,22 +9,29 @@ import {
   User,
   CalendarDays,
   Lock,
+  ListOrdered,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
-import Inputs from "./Inputs"; // Reutilizando seu componente de input
-import { maskCardNumber, maskCardExpiry, maskCVV } from "../utils/mask"; // Suas máscaras
+import Inputs from "./Inputs";
+import { maskCardNumber, maskCardExpiry, maskCVV } from "../utils/mask";
 import "../styles/PaymentModal.css";
 
-// URL da API (Ngrok)
+// URL da API (Render)
 const API_URL = "https://api-memora.onrender.com";
 
 const PaymentModal = ({ isOpen, onClose, paymentData }) => {
   const navigate = useNavigate();
 
+  // --- CONFIGURAÇÃO ---
+  const MAX_PARCELAS = 3;
+
   // --- STATES ---
-  const [method, setMethod] = useState("PIX"); // PIX ou CARD
+  const [method, setMethod] = useState("PIX");
   const [loading, setLoading] = useState(false);
+
+  // State do Parcelamento
+  const [installments, setInstallments] = useState(1);
 
   // States do Pix
   const [pixResult, setPixResult] = useState(null);
@@ -36,13 +43,13 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
 
-  // --- CORREÇÃO BUG 1: RESETAR AO ABRIR ---
+  // --- RESETAR AO ABRIR ---
   useEffect(() => {
     if (isOpen) {
-      setPixResult(null); // Limpa o QR Code antigo
-      setMethod("PIX"); // Reseta para a aba inicial
+      setPixResult(null);
+      setMethod("PIX");
       setLoading(false);
-      // Limpa formulário do cartão
+      setInstallments(1);
       setCardName("");
       setCardNumber("");
       setCardExpiry("");
@@ -52,33 +59,43 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
 
   if (!isOpen || !paymentData) return null;
 
+  // --- CÁLCULO DE PARCELAS ---
+  const valorTotal = parseFloat(paymentData.valor);
+
+  const opcoesParcelamento = Array.from(
+    { length: MAX_PARCELAS },
+    (_, i) => i + 1
+  );
+
   // --- FUNÇÃO DE PAGAMENTO ---
   const handleConfirmPayment = async () => {
     setLoading(true);
 
     try {
-      // Payload base
       const payload = {
         nome: paymentData.cliente.nome,
         cpf: paymentData.cliente.cpf,
         email: paymentData.cliente.email,
         valor: paymentData.valor,
         tipo: method,
-        cep: paymentData.cliente.cep, // <--- O servidor precisa disso!
-        numero: paymentData.cliente.numero, // <--- E disso!
-        phone: paymentData.cliente.phone, // <--- E disso!
+        cep: paymentData.cliente.cep,
+        numero: paymentData.cliente.numero,
+        phone: paymentData.cliente.phone,
       };
-      console.log("ENVIANDO PARA O SERVIDOR:", payload);
-      // Se for cartão, adiciona os dados extras
+
       if (method === "CREDIT_CARD") {
         payload.card = {
           holderName: cardName,
-          number: cardNumber.replace(/\s/g, ""), // Remove espaços pra enviar
+          number: cardNumber.replace(/\s/g, ""),
           expiryMonth: cardExpiry.split("/")[0],
           expiryYear: cardExpiry.split("/")[1],
           ccv: cardCvv,
+          installmentCount: installments,
+          installmentValue: valorTotal / installments,
         };
       }
+
+      console.log("ENVIANDO PAYLOAD:", payload);
 
       const response = await fetch(`${API_URL}/criar-pagamento`, {
         method: "POST",
@@ -89,24 +106,16 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
       const json = await response.json();
 
       if (json.sucesso) {
-        // CENÁRIO PIX (Mostra QR Code)
+        await salvarIdPagamento(json.pagamentoId);
+
         if (json.tipo === "PIX") {
-          await salvarIdPagamento(json.pagamentoId);
           setPixResult(json);
-        }
-
-        // CENÁRIO CARTÃO (Redireciona ou Avisa)
-        else if (json.tipo === "CREDIT_CARD") {
-          await salvarIdPagamento(json.pagamentoId);
-
+        } else {
           if (json.status === "CONFIRMED") {
             alert("Pagamento Aprovado! 🎉");
             navigate(`/painel/${paymentData.slug}`);
           } else {
-            alert(
-              "Pagamento em análise. Assim que aprovar, você receberá um e-mail."
-            );
-            // Pode fechar o modal ou limpar
+            alert("Pagamento em análise ou recusado.");
             onClose();
           }
         }
@@ -121,7 +130,6 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
     }
   };
 
-  // Função auxiliar pra salvar o ID no Supabase
   const salvarIdPagamento = async (idPagamento) => {
     await supabase
       .from("festas")
@@ -129,9 +137,28 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
       .eq("slug", paymentData.slug);
   };
 
-  // --- RENDER: SELEÇÃO E FORMULÁRIO ---
+  // --- RENDER DA SELEÇÃO ---
   const renderSelection = () => (
     <>
+      <div className="value-display-area">
+        <span className="label-total">Total a pagar</span>
+        <h3>
+          R$ {valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+        </h3>
+
+        {/* PARCELAMENTO AUTOMÁTICO */}
+        {installments > 1  && (
+          <div className="installments-badge">
+            <p>
+              {installments}x de R${" "}
+              {(valorTotal / installments).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+              })}
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="method-tabs">
         <button
           className={`tab-btn ${method === "PIX" ? "active" : ""}`}
@@ -147,9 +174,8 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
         </button>
       </div>
 
-      {/* --- FORMULÁRIO DO CARTÃO --- */}
       {method === "CREDIT_CARD" && (
-        <div className="card-form-container" style={{ textAlign: "left" }}>
+        <div className="card-form-container">
           <Inputs
             label="Número do Cartão"
             placeholder="0000 0000 0000 0000"
@@ -157,6 +183,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
             value={cardNumber}
             onChange={(e) => setCardNumber(maskCardNumber(e.target.value))}
           />
+
           <Inputs
             label="Nome Impresso"
             placeholder="Como no cartão"
@@ -164,7 +191,8 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
             value={cardName}
             onChange={(e) => setCardName(e.target.value.toUpperCase())}
           />
-          <div style={{ display: "flex", gap: "10px" }}>
+
+          <div className="row-inputs">
             <Inputs
               label="Validade"
               placeholder="MM/AAAA"
@@ -182,10 +210,35 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
               onChange={(e) => setCardCvv(maskCVV(e.target.value))}
             />
           </div>
+
+          {/* --- SELECT DE PARCELAMENTO --- */}
+          <div className="input-wrapper mt-10">
+            <label className="input-label">Parcelamento</label>
+            <div className="input-field-container">
+              <ListOrdered size={18} className="input-icon" />
+              <select
+                className="custom-select"
+                value={installments}
+                onChange={(e) => setInstallments(Number(e.target.value))}
+              >
+                {opcoesParcelamento.map((qtd) => {
+                  const valorParcela = valorTotal / qtd;
+                  return (
+                    <option key={qtd} value={qtd}>
+                      {qtd}x de R${" "}
+                      {valorParcela.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                      })}{" "}
+                      {qtd === 1 ? "(À vista)" : "(Sem juros)"}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* --- INFO DO PIX --- */}
       {method === "PIX" && (
         <div className="pix-info">
           <p>Aprovação imediata via QR Code. O método mais rápido.</p>
@@ -199,22 +252,25 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
       >
         {loading ? (
           <Loader2 className="spin" />
+        ) : method === "PIX" ? (
+          `Pagar R$ ${valorTotal.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+          })}`
         ) : (
-          `Pagar R$ ${paymentData.valor}`
+          `Confirmar Pagamento`
         )}
       </button>
     </>
   );
 
-  // --- RENDER: RESULTADO DO PIX ---
+  // --- RENDER: PIX RESULT ---
   const renderPixResult = () => (
     <div className="pix-result">
       <img
         src={`data:image/png;base64,${pixResult.qrCodeImagem}`}
         alt="QR Code"
-        style={{ width: "180px", display: "block", margin: "0 auto 20px" }}
+        className="qr-img-result"
       />
-
       <div className="copy-box">
         <input readOnly value={pixResult.pixCopiaCola} />
         <button
@@ -226,21 +282,9 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
           {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
         </button>
       </div>
-
       <button
         className="btn-success"
         onClick={() => navigate(`/painel/${paymentData.slug}`)}
-        style={{
-          marginTop: "20px",
-          width: "100%",
-          padding: "15px",
-          background: "#10B981",
-          border: "none",
-          color: "white",
-          borderRadius: "10px",
-          fontWeight: "bold",
-          cursor: "pointer",
-        }}
       >
         Já fiz o pagamento
       </button>
@@ -253,12 +297,10 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
         <button className="btn-close" onClick={onClose}>
           <X size={24} />
         </button>
-
         <div className="modal-header">
           <h2>{pixResult ? "Escaneie para Pagar" : "Finalizar Compra"}</h2>
           <p>Sua festa: {paymentData.slug}</p>
         </div>
-
         {pixResult ? renderPixResult() : renderSelection()}
       </div>
     </div>
