@@ -20,6 +20,9 @@ const supabase = createClient(
 const ASAAS_URL = process.env.ASAAS_URL;
 const ASAAS_KEY = process.env.ASAAS_KEY;
 
+app.get("/", (req, res) => {
+  res.status(200).send("API Memora está ON! 🚀");
+});
 // --- ROTA 1: CRIAR PAGAMENTO (O que o seu site chama) ---
 app.post("/criar-pagamento", async (req, res) => {
   try {
