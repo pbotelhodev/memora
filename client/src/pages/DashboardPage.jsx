@@ -18,13 +18,14 @@ import {
   Printer,
   Edit2,
   Check,
+  Trash2,
 } from "lucide-react";
 import "../styles/DashboardPage.css";
 
 // --- IMPORTS DOS ASSETS ---
 import templateImg from "../assets/template-plaquinha.png";
 import poppinsFont from "../assets/Poppins-Bold.ttf";
-import logoFull from "../assets/powered-memora.png";
+import logoFull from "../assets/logo-full.png";
 
 const DashboardPage = () => {
   const { slug } = useParams();
@@ -36,6 +37,7 @@ const DashboardPage = () => {
 
   // --- STATES DE UI ---
   const [isTvMode, setIsTvMode] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null); // Estado do Modal
   const [currentSlide, setCurrentSlide] = useState(0);
   const [downloading, setDownloading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
@@ -56,10 +58,11 @@ const DashboardPage = () => {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "fotos" },
         (payload) => {
-          // --- MUDANÇA 1: ORDEM DAS FOTOS ---
-          // Antes: [payload.new, ...prev] (Nova no começo)
-          // Agora: [...prev, payload.new] (Nova no final -> Cronológico)
-          setPhotos((prev) => [...prev, payload.new]);
+          const novaFoto = {
+            ...payload.new,
+            nome_final: payload.new.nome || "Novo (Atualize a página)",
+          };
+          setPhotos((prev) => [...prev, novaFoto]);
         }
       )
       .subscribe();
@@ -69,6 +72,7 @@ const DashboardPage = () => {
     };
   }, [slug]);
 
+  // --- FETCH DE DADOS (COM CORREÇÃO DE NOMES E FOTO) ---
   const fetchEventAndPhotos = async () => {
     try {
       const { data: festa, error: festaError } = await supabase
@@ -85,21 +89,53 @@ const DashboardPage = () => {
           .from("fotos")
           .select("*")
           .eq("festa_id", festa.id)
-          // --- MUDANÇA 2: ORDEM DO BANCO ---
-          // ascending: true = Mais antigas primeiro (Cronológico)
           .order("created_at", { ascending: true });
 
         if (fotosError) throw fotosError;
-        setPhotos(fotos || []);
+
+        // Correção de nomes e fotos (Auth ID -> Tabela convidados)
+        const userIds = [
+          ...new Set(fotos.map((f) => f.user_id).filter((id) => id)),
+        ];
+
+        let mapaDeUsuarios = {}; // Objeto para guardar nome e foto
+
+        if (userIds.length > 0) {
+          const { data: usersData } = await supabase
+            .from("convidados")
+            .select("auth_id, nome, foto_perfil_url") // <--- BUSCANDO A FOTO AQUI
+            .in("auth_id", userIds);
+
+          if (usersData) {
+            usersData.forEach((user) => {
+              mapaDeUsuarios[user.auth_id] = {
+                nome: user.nome,
+                foto: user.foto_perfil_url, // <--- GUARDANDO A FOTO
+              };
+            });
+          }
+        }
+
+        const fotosComNomes = fotos.map((foto) => {
+          const dadosUsuario = mapaDeUsuarios[foto.user_id] || {};
+          return {
+            ...foto,
+            url_final: foto.url_foto || foto.url,
+            nome_final: foto.nome || dadosUsuario.nome || "Anônimo",
+            foto_autor: dadosUsuario.foto || null, // <--- PASSANDO A FOTO PRO OBJETO
+          };
+        });
+
+        setPhotos(fotosComNomes || []);
       }
     } catch (err) {
-      console.error("Erro ao carregar dashboard:", err);
+      console.error("Erro dashboard:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- 2. LÓGICA DE ATUALIZAR NOME ---
+  // --- 2. UPDATE NOME DA FESTA ---
   const handleUpdateName = async () => {
     if (!newName.trim()) return alert("O nome não pode ficar vazio.");
     setIsSavingName(true);
@@ -114,19 +150,18 @@ const DashboardPage = () => {
       setEventData({ ...eventData, nome_festa: newName });
       setIsEditingName(false);
     } catch (error) {
-      console.error("Erro ao atualizar nome:", error);
-      alert("Erro ao salvar. Tente novamente.");
+      console.error("Erro update:", error);
+      alert("Erro ao salvar.");
     } finally {
       setIsSavingName(false);
     }
   };
 
-  // --- 3. LÓGICA DO SLIDESHOW ---
+  // --- 3. SLIDESHOW ---
   useEffect(() => {
     let interval;
     if (isTvMode && photos.length > 0) {
       interval = setInterval(() => {
-        // Vai passando: Foto 1, Foto 2, Foto 3...
         setCurrentSlide((prev) => (prev + 1) % photos.length);
       }, 5000);
     }
@@ -153,7 +188,7 @@ const DashboardPage = () => {
       const zip = new JSZip();
       const folder = zip.folder(`fotos-${slug}`);
       const promises = photos.map(async (photo, index) => {
-        const response = await fetch(photo.url);
+        const response = await fetch(photo.url_final || photo.url);
         const blob = await response.blob();
         folder.file(`foto_${index + 1}.jpg`, blob);
       });
@@ -161,9 +196,49 @@ const DashboardPage = () => {
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `memora-${slug}-completo.zip`);
     } catch (error) {
-      alert("Erro ao gerar ZIP.", error);
+      console.error("Erro ZIP:", error);
+      alert("Erro ao gerar ZIP.");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  // --- 5. DELETAR FOTO ---
+  const handleDeletePhoto = async (photoId, photoUrl) => {
+    const confirmacao = window.confirm("Excluir esta foto permanentemente?");
+    if (!confirmacao) return;
+
+    try {
+      const { error: dbError } = await supabase
+        .from("fotos")
+        .delete()
+        .eq("id", photoId);
+
+      if (dbError) throw dbError;
+
+      // Tenta apagar do Storage
+      try {
+        if (photoUrl) {
+          const urlObj = new URL(photoUrl);
+          const pathParts = urlObj.pathname.split("/festas/");
+          if (pathParts.length > 1) {
+            const filePath = decodeURIComponent(pathParts[1]);
+            await supabase.storage.from("festas").remove([filePath]);
+          }
+        }
+      } catch (storageErr) {
+        console.warn("Aviso storage:", storageErr);
+      }
+
+      setPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
+
+      // Fecha o modal se a foto apagada for a que está aberta
+      if (selectedPhoto && selectedPhoto.id === photoId) {
+        setSelectedPhoto(null);
+      }
+    } catch (error) {
+      console.error("Erro deletar:", error);
+      alert("Erro ao excluir.");
     }
   };
 
@@ -179,7 +254,6 @@ const DashboardPage = () => {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.warn("Erro img:", url, error);
       return null;
     }
   };
@@ -197,12 +271,11 @@ const DashboardPage = () => {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.warn("Erro font:", url, error);
       return null;
     }
   };
 
-  // --- 5. GERAR PDF (TEMPLATE) ---
+  // --- 6. GERAR PDF ---
   const handleGeneratePDF = async () => {
     setGeneratingPdf(true);
     const doc = new jsPDF({
@@ -233,7 +306,6 @@ const DashboardPage = () => {
         doc.setFont("helvetica", "bold");
       }
 
-      // --- POSIÇÕES DO PDF ---
       const titleY = 55;
       const titleColor = "#6b21a8";
       const titleSize = 32;
@@ -241,7 +313,6 @@ const DashboardPage = () => {
       const qrY = 75;
       const qrX = (210 - qrSize) / 2;
 
-      // --- DESENHO DO PDF ---
       doc.addImage(bgBase64, "PNG", 0, 0, 210, 297);
       doc.setFontSize(titleSize);
       doc.setTextColor(titleColor);
@@ -282,38 +353,144 @@ const DashboardPage = () => {
 
   return (
     <div className="dashboard-container">
-      {/* --- TV OVERLAY (MODO TELÃO) --- */}
+      {/* --- MODAL DE FOTO (LIGHTBOX) --- */}
+      {selectedPhoto && (
+        <div
+          className="photo-modal-overlay"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div
+            className="photo-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Imagem Principal */}
+            <img src={selectedPhoto.url_final} alt="Zoom" />
+
+            {/* Botão Fechar (Dentro da foto, topo direita) */}
+            <button
+              className="btn-close-modal"
+              onClick={() => setSelectedPhoto(null)}
+            >
+              <X size={24} />
+            </button>
+
+            {/* Barra Inferior (Dentro da foto, fundo vidro) */}
+            <div className="modal-info-bar">
+              <span>👤 {selectedPhoto.nome_final}</span>
+
+              <div className="modal-actions-group">
+                <button
+                  className="btn-modal-action download"
+                  onClick={() =>
+                    saveAs(
+                      selectedPhoto.url_final,
+                      `memora-${selectedPhoto.id}.jpg`
+                    )
+                  }
+                  title="Baixar"
+                >
+                  <Download size={20} />
+                </button>
+                <button
+                  className="btn-modal-action delete"
+                  onClick={() =>
+                    handleDeletePhoto(selectedPhoto.id, selectedPhoto.url_final)
+                  }
+                  title="Excluir"
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- TV OVERLAY (MODO TELÃO PRO) --- */}
       {isTvMode && (
         <div className="tv-overlay">
-          {photos.length > 0 ? (
-            <div className="tv-slide-container">
-              <img
-                src={photos[currentSlide].url}
-                className="tv-image animate-fade"
-                alt="Slideshow"
-              />
-            </div>
-          ) : (
-            <div className="tv-empty">
-              <h1>Aguardando fotos...</h1>
-              <p>Seja o primeiro a postar!</p>
-            </div>
-          )}
+          {/* Botão Fechar */}
+          <button className="btn-close-tv" onClick={() => setIsTvMode(false)}>
+            <X size={40} />
+          </button>
 
-          <div className="tv-ui-layer">
-            <div className="tv-logo-area">
-              <img src={logoFull || ""} alt="Memora" />
+          {/* Layout Principal: Coluna Esq | Centro | Coluna Dir */}
+          <div className="tv-layout-container">
+            {/* 1. COLUNA ESQUERDA (QR + LOGO) */}
+            <div className="tv-side-column left">
+              <div className="tv-qr-box">
+                <p>Participe!</p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=https://www.appmemora.com.br/feed/${eventData.slug}`}
+                  alt="QR Code"
+                />
+                <span>Aponte a câmera</span>
+              </div>
+              {/* MARCA D'ÁGUA LATERAL */}
+              <div className="tv-side-watermark animate-fade">
+                <img src={logoFull || ""} alt="Memora" />
+              </div>
             </div>
-            <button className="btn-close-tv" onClick={() => setIsTvMode(false)}>
-              <X size={32} />
-            </button>
-            <div className="tv-qr-card">
-              <p>Participe também!</p>
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=https://www.appmemora.com.br/feed/${eventData.slug}`}
-                alt="QR"
-              />
-              <span>Aponte a câmera</span>
+
+            {/* 2. CONTEÚDO CENTRAL (CARD 4:5 + AVATAR) */}
+            <div className="tv-center-column">
+              {photos.length > 0 ? (
+                <div className="tv-card-display animate-fade">
+                  {/* Cabeçalho do Card (Nome) */}
+                  <div className="tv-card-header">
+                    {/* --- LÓGICA DO AVATAR --- */}
+                    {photos[currentSlide].foto_autor ? (
+                      <img
+                        src={photos[currentSlide].foto_autor}
+                        className="tv-avatar-img"
+                        alt="Avatar"
+                        onError={(e) => (e.target.style.display = "none")}
+                      />
+                    ) : (
+                      <div className="tv-avatar-placeholder">
+                        {(photos[currentSlide].nome_final || "A").charAt(0)}
+                      </div>
+                    )}
+                    {/* ----------------------- */}
+
+                    <span className="tv-username">
+                      {photos[currentSlide].nome_final}
+                    </span>
+                  </div>
+
+                  {/* Imagem do Card (Agora 4:5 Retrato) */}
+                  <div className="tv-card-image-wrapper">
+                    <img
+                      src={
+                        photos[currentSlide].url_final ||
+                        photos[currentSlide].url
+                      }
+                      alt="Slide"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="tv-empty-state">
+                  <h1>Aguardando fotos...</h1>
+                  <p>Seja o primeiro a aparecer no telão!</p>
+                </div>
+              )}
+            </div>
+
+            {/* 3. COLUNA DIREITA (QR + LOGO) */}
+            <div className="tv-side-column right">
+              <div className="tv-qr-box">
+                <p>Participe!</p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=https://www.appmemora.com.br/feed/${eventData.slug}`}
+                  alt="QR Code"
+                />
+                <span>Aponte a câmera</span>
+              </div>
+              {/* MARCA D'ÁGUA LATERAL */}
+              <div className="tv-side-watermark animate-fade">
+                <img src={logoFull || ""} alt="Memora" />
+              </div>
             </div>
           </div>
         </div>
@@ -344,8 +521,6 @@ const DashboardPage = () => {
         <div className="event-status-bar">
           <div className="event-info">
             <p>Gerenciando evento:</p>
-
-            {/* LÓGICA DE EDIÇÃO DE NOME */}
             {isEditingName ? (
               <div className="edit-title-wrapper">
                 <input
@@ -390,12 +565,10 @@ const DashboardPage = () => {
                 </button>
               </div>
             )}
-
             <span className="photo-counter">
               {photos.length} fotos capturadas
             </span>
           </div>
-
           <div
             className={`status-badge ${
               eventData.status === "PENDENTE" ? "warning" : "success"
@@ -462,7 +635,6 @@ const DashboardPage = () => {
                 <p>Exibir slideshow ao vivo</p>
               </div>
             </button>
-
             <button
               className="btn-action btn-share"
               onClick={handleWhatsappShare}
@@ -474,7 +646,6 @@ const DashboardPage = () => {
                 <p>Enviar link no WhatsApp</p>
               </div>
             </button>
-
             <div className="zip-area">
               {downloadStatus.available ? (
                 <button
@@ -505,6 +676,83 @@ const DashboardPage = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* --- GALERIA DE MODERAÇÃO --- */}
+        <div className="moderation-gallery-section">
+          <div className="gallery-header">
+            <h2>Galeria do Evento</h2>
+            <p>
+              Clique na foto para ampliar. Baixe na <strong>esquerda</strong> ou
+              exclua na <strong>direita</strong>.
+            </p>
+          </div>
+
+          {photos.length === 0 ? (
+            <div className="gallery-empty">
+              <p>Nenhuma foto postada ainda.</p>
+            </div>
+          ) : (
+            <div className="gallery-grid">
+              {[...photos].reverse().map((photo) => {
+                const imgUrl = photo.url_final;
+                const nomeAutor = photo.nome_final;
+
+                return (
+                  <div key={photo.id} className="photo-card-moderation">
+                    <div className="photo-wrapper">
+                      <img
+                        src={imgUrl}
+                        alt={`Foto de ${nomeAutor}`}
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                        onClick={() => setSelectedPhoto(photo)} // Abre modal
+                        style={{ cursor: "pointer" }}
+                      />
+
+                      {/* Botões Overlay (Lista) */}
+                      <button
+                        className="btn-overlay btn-download-photo"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          saveAs(imgUrl, `memora-${photo.id}.jpg`);
+                        }}
+                        title="Baixar foto"
+                      >
+                        <Download size={16} />
+                      </button>
+
+                      <button
+                        className="btn-overlay btn-delete-photo"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePhoto(photo.id, imgUrl);
+                        }}
+                        title="Excluir foto"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                    <div className="photo-info">
+                      <span className="user-name">👤 {nomeAutor}</span>
+                      <span className="photo-time">
+                        {new Date(photo.created_at).toLocaleTimeString(
+                          "pt-BR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

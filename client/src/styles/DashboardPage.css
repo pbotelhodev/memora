@@ -1,10 +1,10 @@
 /* ==========================================================================
-   BASE (MOBILE FIRST)
+   BASE (MOBILE FIRST - CELULARES)
+   Aqui definimos 2 colunas para a galeria
    ========================================================================== */
 
-/* Container Geral */
 .dashboard-container {
-  background-color: #0f172a; /* Slate-900 */
+  background-color: #0f172a;
   min-height: 100vh;
   color: white;
   padding-top: 10px;
@@ -17,7 +17,6 @@
   gap: 10px;
 }
 
-/* Área do Conteúdo */
 .dashboard-content {
   width: 90%;
   max-width: 1200px;
@@ -50,6 +49,7 @@
   font-weight: bold;
   color: white;
   font-size: 0.9rem;
+  padding: 0;
 }
 
 .btn-logout {
@@ -74,7 +74,6 @@
   font-size: 0.85rem;
 }
 
-/* Título (Visualização) */
 .event-info h1 {
   font-size: 1.8rem;
   background: linear-gradient(90deg, #ffffff, #cbd5e1);
@@ -84,7 +83,7 @@
   line-height: 1.2;
 }
 
-/* --- EDIÇÃO DE NOME (LÁPIS E INPUT) --- */
+/* --- EDIÇÃO DE NOME --- */
 .title-display-wrapper {
   display: flex;
   align-items: center;
@@ -99,11 +98,11 @@
   width: 32px;
   height: 32px;
   display: flex;
-  padding: 0px;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
+  padding: 0;
 }
 
 .btn-edit-pencil:hover {
@@ -112,7 +111,6 @@
   border-color: #a855f7;
 }
 
-/* Wrapper do modo edição */
 .edit-title-wrapper {
   display: flex;
   align-items: center;
@@ -145,28 +143,26 @@
   border-radius: 8px;
   border: none;
   display: flex;
-  padding: 0px;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: transform 0.2s;
+  padding: 0;
 }
 
 .btn-icon-action.save {
-  background-color: #10b981; /* Verde Sucesso */
+  background-color: #10b981;
   color: white;
 }
 
 .btn-icon-action.cancel {
-  background-color: #ef4444; /* Vermelho Cancelar */
+  background-color: #ef4444;
   color: white;
 }
 
 .btn-icon-action:hover {
   transform: scale(1.1);
 }
-
-/* --- FIM EDIÇÃO --- */
 
 .status-badge {
   align-self: flex-start;
@@ -191,14 +187,13 @@
   animation: pulse 2s infinite;
 }
 
-/* --- GRID PRINCIPAL --- */
+/* --- GRID PRINCIPAL (PAINEL) --- */
 .dashboard-grid {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* Estilo Genérico dos Cards */
 .dash-card {
   background-color: #1e293b;
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -206,7 +201,7 @@
   padding: 20px;
 }
 
-/* --- CARD 1: ACESSO (QR Code) --- */
+/* --- CARD 1: ACESSO --- */
 .access-card {
   text-align: center;
 }
@@ -251,7 +246,6 @@
   flex: 1;
 }
 
-/* Botão Copiar Pequeno */
 .link-box button {
   background: linear-gradient(135deg, #a855f7, #06b6d4);
   border: none;
@@ -259,14 +253,13 @@
   width: 36px;
   height: 36px;
   display: flex;
-  padding: 0px;
   align-items: center;
   justify-content: center;
   color: white;
   cursor: pointer;
   flex-shrink: 0;
   transition: transform 0.2s, opacity 0.2s;
-  box-shadow: 0 2px 10px rgba(168, 85, 247, 0.3);
+  padding: 0;
 }
 
 .link-box button:hover {
@@ -343,7 +336,6 @@
   opacity: 0.9;
 }
 
-/* Botões de Download ZIP */
 .zip-area {
   width: 100%;
 }
@@ -382,7 +374,7 @@
 }
 
 /* ==========================================================================
-   MODO TELÃO (TV OVERLAY PREMIUM)
+   TV OVERLAY (MODO TELÃO PRO)
    ========================================================================== */
 
 .tv-overlay {
@@ -391,239 +383,551 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: #000; /* Fundo preto cinema */
+  background-color: #000;
   z-index: 9999;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
   overflow: hidden;
+  background-image: radial-gradient(circle at center, #1e293b 0%, #000000 80%);
 }
 
-/* --- CAMADA 1: FOTO (No fundo) --- */
-.tv-slide-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-}
-
-.tv-image {
-  max-width: 100%;
-  max-height: 100vh;
-  object-fit: contain;
-  /* Sombra leve para destacar se o fundo for escuro */
-  filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
-  animation: fadeIn 1s ease-in-out;
-}
-
-/* --- CAMADA 2: UI (Botões e Logos) --- */
-.tv-ui-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10; /* Fica ACIMA da foto */
-  pointer-events: none; /* Permite clicar através da camada onde não tem botão */
-  padding: 30px;
-  display: grid;
-  /* Grid para posicionar Logo, Botão e QR */
-  grid-template-areas:
-    "logo close"
-    ". ."
-    ". qr";
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 1fr auto;
-}
-
-/* LOGO (Topo Esquerda) */
-.tv-logo-area {
-  grid-area: logo;
-  pointer-events: auto;
-}
-.tv-logo-area img {
-  height: 60px; /* Ajuste conforme tamanho do seu logo */
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
-}
-
-/* BOTÃO FECHAR (Topo Direita - Estilo Vidro/Translúcido) */
 .btn-close-tv {
-  grid-area: close;
-  justify-self: end; /* Alinha na direita */
-  pointer-events: auto;
-
-  /* Efeito Vidro */
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   color: white;
-
   width: 50px;
   height: 50px;
   border-radius: 50%;
   display: flex;
-  padding: 0px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10005;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.btn-close-tv:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  transform: scale(1.1);
+}
+
+/* --- LAYOUT CONTAINER (MOBILE) --- */
+.tv-layout-container {
+  display: flex;
+  flex-direction: column; /* Coluna no mobile */
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* --- COLUNAS LATERAIS --- */
+.tv-side-column {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Esconde o QR da Esquerda no Mobile */
+.tv-side-column.left {
+  display: none;
+}
+
+/* Mostra o QR da Direita no Mobile (Embaixo do card) */
+.tv-side-column.right {
+  order: 2; /* Fica abaixo do card */
+  display: flex;
+  margin-top: 10px;
+}
+
+/* Caixa QR Pequena no Mobile */
+.tv-qr-box {
+  background: white;
+  padding: 10px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  animation: float 6s ease-in-out infinite;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 140px;
+}
+
+.tv-qr-box img {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 5px 0;
+}
+
+.tv-qr-box p {
+  color: #6b21a8;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.tv-qr-box span {
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* Esconde logos laterais no mobile */
+.tv-side-watermark {
+  display: none;
+}
+
+/* --- COLUNA CENTRAL (CARD DA FOTO) --- */
+.tv-center-column {
+  order: 1; /* Fica no topo */
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: auto;
+  padding: 0;
+}
+
+.tv-card-display {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  
+  width: auto;
+  max-width: 90vw;
+  max-height: 65vh;
+  aspect-ratio: 4 / 5 !important;
+}
+
+.tv-card-header {
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Avatar Imagem */
+.tv-avatar-img {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  margin-right: 0;
+}
+
+/* Avatar Letra */
+.tv-avatar-placeholder {
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #a855f7, #06b6d4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  font-size: 1rem;
+  padding: 0;
+}
+
+.tv-username {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- ÁREA DA IMAGEM: 4:5 --- */
+.tv-card-image-wrapper {
+  background: black;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 4 / 5 !important;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tv-card-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+  object-position: center;
+  display: block;
+}
+
+.tv-empty-state {
+  text-align: center;
+  color: #94a3b8;
+}
+.tv-empty-state h1 { font-size: 2rem; color: white; margin-bottom: 10px; }
+.tv-empty-state p { font-size: 1.2rem; }
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes fade {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade {
+  animation: fade 0.8s ease-out;
+}
+
+/* ==========================================================================
+   GALERIA DE MODERAÇÃO (MOBILE FIRST: 2 COLUNAS)
+   ========================================================================== */
+
+.moderation-gallery-section {
+  margin-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 30px;
+}
+
+.gallery-header h2 {
+  font-size: 1.5rem;
+  color: white;
+  margin-bottom: 5px;
+}
+
+.gallery-header p {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.gallery-empty {
+  text-align: center;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 15px;
+  color: #64748b;
+}
+
+/* ✅ MOBILE: 2 COLUNAS */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+/* Card da Foto */
+.photo-card-moderation {
+  background: #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s;
+  position: relative;
+}
+
+.photo-card-moderation:hover {
+  border-color: #a855f7;
+}
+
+.photo-wrapper {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.photo-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+/* BOTÕES SOBRE A FOTO (OVERLAY) */
+.btn-overlay {
+  position: absolute;
+  top: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: all 0.2s;
+  color: white;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  padding: 0;
+}
+
+.btn-overlay:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.btn-download-photo {
+  left: 8px; 
+  background-color: rgba(6, 182, 212, 0.8);
+  backdrop-filter: blur(4px);
+}
+.btn-download-photo:hover {
+  background-color: #06b6d4;
+}
+
+.btn-delete-photo {
+  right: 8px; 
+  background-color: rgba(239, 68, 68, 0.8);
+  backdrop-filter: blur(4px);
+}
+.btn-delete-photo:hover {
+  background-color: #ef4444;
+}
+
+/* Info */
+.photo-info {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.photo-time {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   MODAL DE VISUALIZAÇÃO DE FOTO
+   ========================================================================== */
+
+.photo-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.2s ease-out;
+  padding: 20px;
+}
+
+/* Container */
+.photo-modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.photo-modal-content img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  display: block;
+}
+
+/* Botão Fechar */
+.btn-close-modal {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+  padding: 0;
+}
+
+.btn-close-modal:hover {
+  background: rgba(239, 68, 68, 0.8);
+  transform: scale(1.1);
+}
+
+/* Barra Inferior */
+.modal-info-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  backdrop-filter: blur(4px);
+  color: white;
+  z-index: 10001;
+}
+
+.modal-info-bar span {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 15px;
+}
+
+.modal-actions-group {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-modal-action {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
+  backdrop-filter: blur(4px);
+  padding: 0;
 }
-.btn-close-tv:hover {
-  background: rgba(239, 68, 68, 0.8); /* Vermelho ao passar o mouse */
+
+.btn-modal-action:hover {
   transform: scale(1.1);
   border-color: transparent;
 }
 
-/* QR CODE CARD (Baixo Direita - Card Branco) */
-.tv-qr-card {
-  grid-area: qr;
-  justify-self: end;
-  align-self: end;
-  pointer-events: auto;
-
-  background: rgba(255, 255, 255, 0.95);
-  padding: 15px;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  text-align: center;
-  animation: slideUp 0.5s ease-out;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  max-width: 180px;
+.btn-modal-action.download:hover {
+  background: #06b6d4;
 }
 
-.tv-qr-card p {
-  color: #6b21a8; /* Roxo da marca */
-  font-weight: 700;
-  font-size: 0.9rem;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.tv-qr-card img {
-  width: 120px;
-  height: 120px;
-  border-radius: 5px;
-}
-
-.tv-qr-card span {
-  color: #334155;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-/* TELA DE ESPERA */
-.tv-empty {
-  color: #64748b;
-  text-align: center;
-  z-index: 5;
-}
-
-/* ANIMAÇÕES GERAIS */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-@keyframes pulse {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-@keyframes spin {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-.spin {
-  animation: spin 1s linear infinite;
+.btn-modal-action.delete:hover {
+  background: #ef4444;
 }
 
 /* ==========================================================================
-   DESKTOP (1024px +)
-   AQUI ESTÁ A CORREÇÃO DO GRID PRINCIPAL
+   MEDIA QUERY: TABLET (768px +)
    ========================================================================== */
+@media (min-width: 768px) {
+  .dashboard-grid {
+    display: grid;
+    /* Grid de colunas começa aqui para o painel */
+    grid-template-columns: 350px 1fr;
+    gap: 30px;
+    align-items: start;
+  }
 
-@media (min-width: 1024px) {
+  /* ✅ TABLET: 4 COLUNAS */
+  .gallery-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* --- MANTÉM TELÃO (TV) EM COLUNA NO TABLET VERTICAL --- */
+  /* Não forçamos row aqui para não espremer no iPad */
+}
+
+/* ==========================================================================
+   MEDIA QUERY: DESKTOP (1024px +)
+   ========================================================================== */
+@media (min-width: 1025px) {
   .dashboard-content {
     max-width: 1280px;
     width: 100%;
     margin: 0 auto;
     padding: 10px 15px;
   }
-
+  
   .welcome-text {
     display: flex;
     align-items: center;
     justify-content: center;
   }
-
+  
   .event-status-bar {
     flex-direction: row;
     justify-content: space-between;
     align-items: flex-end;
   }
-
+  
   .event-info h1 {
     font-size: 2.5rem;
   }
+  
   .status-badge {
     align-self: auto;
     font-size: 0.9rem;
     padding: 8px 16px;
     margin: auto 0px;
   }
-
-  /* Grid Principal Lado a Lado */
-  .dashboard-grid {
-    display: grid;
-    /* Coluna Esquerda (QR): 350px | Coluna Direita (Ações): O resto */
-    grid-template-columns: 350px 1fr;
-    gap: 30px;
-    align-items: start;
-  }
-
+  
   .actions-card {
     height: 100%;
     justify-content: flex-start;
   }
-
   .dash-card {
     padding: 30px;
   }
   .zip-area {
     height: 30%;
   }
-  
   .qr-box img {
+    /* QR code do painel */
     width: 180px;
     height: 180px;
     padding: 30px;
@@ -631,11 +935,88 @@
   .zip .action-text h3 {
     font-size: 1.3rem;
   }
-  /* Ajuste do Input de Edição no Desktop */
   .edit-title-wrapper {
     flex-direction: row;
   }
   .input-title-edit {
     font-size: 2rem;
+  }
+  
+  /* ✅ DESKTOP: 5 COLUNAS */
+  .gallery-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  /* --- TELÃO (TV) VIRA LINHA NO DESKTOP --- */
+  .tv-layout-container {
+    flex-direction: row;
+    padding: 40px;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .tv-side-column {
+    display: flex; 
+    width: 250px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    order: 0; 
+  }
+
+  .tv-side-column.left, 
+  .tv-side-column.right {
+    display: flex; 
+    margin: 0;
+  }
+
+  .tv-center-column {
+    order: 0;
+    flex: 1;
+    max-width: 1200px;
+    padding: 0 40px;
+    height: 100%;
+  }
+
+  .tv-card-display {
+    max-height: 85vh; 
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    max-width: 100%;
+  }
+
+  .tv-card-header {
+    padding: 15px 25px;
+  }
+
+  .tv-avatar-img, .tv-avatar-placeholder {
+    width: 45px;
+    height: 45px;
+    font-size: 1.2rem;
+  }
+
+  .tv-username {
+    font-size: 1.5rem;
+  }
+
+  /* Estilo do QR no Telão Desktop */
+  .tv-qr-box {
+    width: 100%; 
+    padding: 20px;
+  }
+  .tv-qr-box img { margin: 10px 0; width: 100%; padding: 0; }
+  .tv-qr-box p { font-size: 1.2rem; }
+  .tv-qr-box span { font-size: 0.9rem; }
+
+  /* Mostra a marca d'água no desktop (50px) */
+  .tv-side-watermark {
+    display: block;
+    margin-top: 25px;
+    opacity: 0.7;
+    text-align: center;
+  }
+  .tv-side-watermark img {
+    height: 50px; 
+    width: auto;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
   }
 }

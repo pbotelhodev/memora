@@ -132,6 +132,13 @@
 }
 .cell-area {
   transition-duration: 0.6s;
+  display: flex;
+  flex-direction: column;
+  & img{
+    width: 300px; 
+    height: auto;
+    border-radius: 20px;
+  }
 }
 .cell-area:hover {
   transform: scale(1.02);
