@@ -12,6 +12,7 @@ import {
   Mailbox,
   Smartphone,
   Ticket,
+  Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
@@ -28,20 +29,11 @@ import Inputs from "../components/Inputs";
 import PaymentModal from "../components/PaymentModal";
 import Loading from "../components/Loading";
 
-//Styles
+// Styles
 import "../styles/CreateEventPage.css";
 import LogoImg from "../assets/logo-memora.png";
 
 const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwxyz", 10);
-
-const CUPONS_VALIDOS = {
-  TESTE10: 10,
-  TESTE15: 15,
-  TESTE20: 20,
-  TESTE50: 50,
-  TESTE99: 75,
-  TESTE100: 100,
-};
 
 const CreateEventPage = () => {
   const navigate = useNavigate();
@@ -53,11 +45,15 @@ const CreateEventPage = () => {
   const [cepError, setCepError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Preço e Cupom
-  const [precoOriginal] = useState((99.9).toFixed(2));
-  const [precoPromo, setPrecoPromo] = useState(precoOriginal);
+  // Preço e Cupom (Dinâmico)
+  const [precoOriginal] = useState(99.9);
+  const [precoPromo, setPrecoPromo] = useState(99.9);
+
+  // Estados do Cupom
   const [cupomAtivo, setCupomAtivo] = useState(0);
   const [descontoCupom, setDescontoCupom] = useState(0);
+  const [tipoDesconto, setTipoDesconto] = useState("");
+  const [validandoCupom, setValidandoCupom] = useState(false);
 
   // Form Data
   const [nameUser, setNameUser] = useState("");
@@ -75,7 +71,7 @@ const CreateEventPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
 
-  // --- HANDLERS (Máscaras e Validações) ---
+  // --- HANDLERS ---
   const handleCpfChange = (e) => {
     setCpfUser(maskCPF(e.target.value));
     setCpfError(false);
@@ -106,37 +102,108 @@ const CreateEventPage = () => {
     if (cepUser.length > 0 && !validarCEP(cepUser)) setCepError(true);
   };
 
-  const handleCupomBlur = (e) => {
-    let cupom = e.target.value.trim().toUpperCase();
-    if (cupom.length > 0) validarCupom(cupom);
-    else {
-      setPrecoPromo(precoOriginal);
-      setCupomAtivo(0);
-    }
-  };
-
-  const validarCupom = (cupom) => {
-    const descCupom = CUPONS_VALIDOS[cupom];
-    if (descCupom !== undefined) {
-      setCupomAtivo(1);
-      setDescontoCupom(descCupom);
-      let valorDeDesconto = precoOriginal - precoOriginal * (descCupom / 100);
-      let precoFinal =
-        Math.floor(valorDeDesconto) + (descCupom === 100 ? 0 : 0.9);
-      setPrecoPromo(precoFinal.toFixed(2));
+  // --- VALIDAÇÃO DE CUPOM REAL (SUPABASE) ---
+  const handleCupomBlur = async (e) => {
+    const codigo = e.target.value.trim().toUpperCase();
+    if (codigo.length > 0) {
+      await validarCupom(codigo);
     } else {
-      setCupomAtivo(2);
-      setDescontoCupom(0);
-      setPrecoPromo(precoOriginal);
+      resetCupom();
     }
   };
 
-  // --- SUBMIT (Salvar e Abrir Modal) ---
+  const resetCupom = () => {
+    setPrecoPromo(precoOriginal);
+    setCupomAtivo(0);
+    setDescontoCupom(0);
+    setTipoDesconto("");
+  };
+
+  const validarCupom = async (codigo) => {
+    setValidandoCupom(true);
+    setCupomAtivo(0);
+
+    console.log("🔍 Validando cupom:", codigo);
+
+    try {
+      const { data, error } = await supabase
+        .from("cupons")
+        .select("*")
+        .eq("codigo", codigo)
+        .eq("ativo", true)
+        .maybeSingle();
+
+      if (error) {
+        console.error("⚠️ Erro Banco de Dados (Cupom):", error.message);
+        setCupomAtivo(2);
+        resetCupom();
+        return;
+      }
+
+      if (!data) {
+        console.log("❌ Cupom não encontrado.");
+        setCupomAtivo(2);
+        resetCupom();
+        return;
+      }
+
+      if (data.limite_uso !== null && data.usados >= data.limite_uso) {
+        alert("Este cupom atingiu o limite de usos.");
+        setCupomAtivo(2);
+        resetCupom();
+        return;
+      }
+
+      // --- SUCESSO: CUPOM VÁLIDO ---
+      console.log("✅ Cupom Válido!", data);
+
+      setCupomAtivo(1);
+      setDescontoCupom(data.valor_desconto);
+      setTipoDesconto(data.tipo);
+
+      // --- LÓGICA DE PREÇO (COM FINAL .90) ---
+      let novoPreco = precoOriginal;
+
+      if (data.tipo === "porcentagem") {
+        const desconto = (precoOriginal * data.valor_desconto) / 100;
+        let valorComDesconto = precoOriginal - desconto;
+
+        // Se for grátis (100%), mantém 0. Se não, força final .90
+        if (valorComDesconto <= 0.1) {
+          novoPreco = 0;
+        } else {
+          // Pega a parte inteira e soma 0.90
+          novoPreco = Math.floor(valorComDesconto) + 0.9;
+        }
+      } else if (data.tipo === "valor_fixo") {
+        let valorComDesconto = precoOriginal - data.valor_desconto;
+
+        if (valorComDesconto <= 0) {
+          novoPreco = 0;
+        } else {
+          novoPreco = Math.floor(valorComDesconto) + 0.9;
+        }
+      } else if (data.tipo === "isencao") {
+        novoPreco = 0;
+      }
+
+      if (novoPreco < 0) novoPreco = 0;
+
+      setPrecoPromo(novoPreco);
+    } catch (err) {
+      console.error("🔥 Erro Crítico Cupom:", err);
+      setCupomAtivo(2);
+      resetCupom();
+    } finally {
+      setValidandoCupom(false);
+    }
+  };
+
+  // --- SUBMIT ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // 1. VALIDAÇÃO DE SEGURANÇA (O Porteiro)
     if (
       cpfError ||
       telError ||
@@ -157,21 +224,16 @@ const CreateEventPage = () => {
     }
 
     try {
-      // 2. PREPARAÇÃO DOS DADOS
-      // Formata data (DD/MM/AAAA -> YYYY-MM-DD)
       const [dia, mes, ano] = dateEvent.split("/");
       const dataFormatada = `${ano}-${mes}-${dia}`;
-
-      // Gera ID único e limpa o valor
       const meuSlug = nanoid();
-      const valorFinal = parseFloat(precoPromo);
 
-      // Lógica "É Grátis?": Já define o status final aqui pra não precisar de update depois
+      const valorFinal = parseFloat(Number(precoPromo).toFixed(2));
+
       const isFree = valorFinal <= 0;
       const statusInicial = isFree ? "SISTEMA NO AR" : "PENDENTE";
       const idPagamentoInicial = isFree ? `FREE_${Date.now()}` : null;
 
-      // 3. SALVAR NO SUPABASE (Apenas uma chamada)
       const { error } = await supabase.from("festas").insert([
         {
           slug: meuSlug,
@@ -184,10 +246,10 @@ const CreateEventPage = () => {
           nome_festa: titleEvent,
           data_festa: dataFormatada,
           local_festa: localEvent || null,
-          cupom_usado: cupomUser || null,
+          cupom_usado: cupomAtivo === 1 ? cupomUser.toUpperCase() : null,
           valor_pago: valorFinal,
-          status: statusInicial, // Já entra certo
-          asaas_id: idPagamentoInicial, // Já entra certo se for free
+          status: statusInicial,
+          asaas_id: idPagamentoInicial,
         },
       ]);
 
@@ -195,14 +257,10 @@ const CreateEventPage = () => {
 
       console.log("Festa Salva! ID:", meuSlug);
 
-      // 4. DECISÃO DE FLUXO (Redirecionar ou Cobrar)
       if (isFree) {
-        // --- CAMINHO VIP (GRÁTIS) ---
         alert("Cupom 100% aplicado! Festa liberada.");
         navigate(`/painel/${meuSlug}`);
       } else {
-        // --- CAMINHO PAGAMENTO (MODAL) ---
-        // Passamos TODOS os dados que o Modal e o Backend precisam (inclusive Endereço pro Cartão)
         setPaymentData({
           slug: meuSlug,
           valor: valorFinal,
@@ -215,11 +273,10 @@ const CreateEventPage = () => {
             numero: numberHouseUser,
           },
         });
-
-        setModalOpen(true); // Abre o Modal
+        setModalOpen(true);
       }
     } catch (err) {
-      console.error("Erro crítico:", err.message);
+      console.error("Erro ao criar festa:", err.message);
       alert("Erro ao conectar com o servidor. Tente novamente.");
     } finally {
       setLoading(false);
@@ -375,18 +432,26 @@ const CreateEventPage = () => {
                     req={true}
                     error={dataError}
                   />
-                  <Inputs
-                    value={cupomUser}
-                    onChange={(e) => setCupomUser(e.target.value)}
-                    onBlur={handleCupomBlur}
-                    title={"Cupom"}
-                    placeholder={"Possui cupom?"}
-                    icon={<Ticket size={18} />}
-                    type={"text"}
-                    req={false}
-                    cupomAtivo={cupomAtivo}
-                    descontoCupom={descontoCupom}
-                  />
+                  <div style={{ position: "relative", width: "100%" }}>
+                    <Inputs
+                      value={cupomUser}
+                      onChange={(e) => setCupomUser(e.target.value)}
+                      onBlur={handleCupomBlur}
+                      title={"Cupom"}
+                      placeholder={"Possui cupom?"}
+                      icon={
+                        validandoCupom ? (
+                          <Loader2 className="spin" size={18} />
+                        ) : (
+                          <Ticket size={18} />
+                        )
+                      }
+                      type={"text"}
+                      req={false}
+                      cupomAtivo={cupomAtivo}
+                      descontoCupom={descontoCupom}
+                    />
+                  </div>
                 </div>
 
                 <div className="card-register-plan">
@@ -396,15 +461,28 @@ const CreateEventPage = () => {
                     </div>
                     <div className="price-plan">
                       {cupomAtivo === 1 && (
-                        <h1 className="text-gradient cupom-ativo">R$99,90</h1>
+                        <h1 className="text-gradient cupom-ativo">
+                          R$ {precoOriginal.toFixed(2).replace(".", ",")}
+                        </h1>
                       )}
-                      <h1 className="text-gradient">R$ {precoPromo}</h1>
+                      <h1 className="text-gradient">
+                        R$ {Number(precoPromo).toFixed(2).replace(".", ",")}
+                      </h1>
                     </div>
                   </div>
                 </div>
+
                 {cupomAtivo === 1 && (
                   <p className="subtitle-promo">
-                    Você recebeu um desconto de {descontoCupom}%
+                    Cupom aplicado:{" "}
+                    {tipoDesconto === "porcentagem"
+                      ? `${descontoCupom}% OFF`
+                      : `R$ ${descontoCupom} OFF`}
+                  </p>
+                )}
+                {cupomAtivo === 2 && (
+                  <p className="subtitle-promo error">
+                    Cupom inválido ou expirado.
                   </p>
                 )}
               </div>
@@ -412,8 +490,13 @@ const CreateEventPage = () => {
 
             <div className="area-button">
               <div className="button-create">
-                <button>
-                  <CreditCard /> Pagar e Criar Festa
+                <button disabled={loading}>
+                  <CreditCard />
+                  {loading
+                    ? "Processando..."
+                    : parseFloat(precoPromo) <= 0
+                    ? "Criar Festa Grátis"
+                    : "Pagar e Criar Festa"}
                 </button>
               </div>
               <div className="security">

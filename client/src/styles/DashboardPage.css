@@ -416,7 +416,7 @@
   transform: scale(1.1);
 }
 
-/* --- LAYOUT CONTAINER (MOBILE) --- */
+/* --- LAYOUT CONTAINER (MOBILE E TABLET VERTICAL) --- */
 .tv-layout-container {
   display: flex;
   flex-direction: column; /* Coluna no mobile */
@@ -608,7 +608,7 @@
 }
 
 /* ==========================================================================
-   GALERIA DE MODERAÇÃO (MOBILE FIRST: 2 COLUNAS)
+   GALERIA DE MODERAÇÃO
    ========================================================================== */
 
 .moderation-gallery-section {
@@ -885,7 +885,7 @@
 /* ==========================================================================
    MEDIA QUERY: DESKTOP (1024px +)
    ========================================================================== */
-@media (min-width: 1025px) {
+@media (min-width: 1024px) {
   .dashboard-content {
     max-width: 1280px;
     width: 100%;

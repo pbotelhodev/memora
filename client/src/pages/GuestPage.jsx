@@ -3,7 +3,7 @@ import {
   Home,
   Camera,
   User,
-  Image,
+  Image as ImageIcon,
   RefreshCw,
   X,
   Check,
@@ -11,6 +11,8 @@ import {
   Pencil,
   Save,
   XCircle,
+  Loader2,
+  Lock, // Importado para caso a festa encerre (regra 12h visual)
 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
@@ -33,8 +35,9 @@ const GuestPage = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempUserName, setTempUserName] = useState("");
 
-  // BD
+  // BD & Regras de Negócio
   const [festa, setFesta] = useState(null);
+  const [removeMarcaDagua, setRemoveMarcaDagua] = useState(false); 
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
 
@@ -62,21 +65,47 @@ const GuestPage = () => {
   const canvasRef = useRef(null);
   const formRef = useRef(null);
 
-  // --- FUNÇÕES DE BD ---
+  // --- FUNÇÕES DE BD (BUSCAR FESTA + REGRA DO CUPOM) ---
   const buscarFesta = async () => {
     setLoading(true);
     setErro(false);
-    const { data, error } = await supabase
+
+    // 1. Busca dados da festa
+    const { data: festaData, error } = await supabase
       .from("festas")
       .select("*")
       .eq("slug", slug)
       .single();
+
     if (error) {
       console.log("Erro:", error);
       setErro(true);
-    } else {
-      setFesta(data);
+      setLoading(false);
+      return;
     }
+
+    setFesta(festaData);
+
+    // 2. VERIFICAÇÃO DO CUPOM NO BANCO DE DADOS
+    // Se a festa tem um cupom atrelado, verifica se ele remove a marca d'água
+    if (festaData.cupom) {
+      const { data: cupomData } = await supabase
+        .from("cupons")
+        .select("remove_marca_dagua")
+        .eq("codigo", festaData.cupom) // Busca pelo código salvo na festa
+        .maybeSingle(); // maybeSingle evita erro se o cupom foi deletado
+
+      if (cupomData?.remove_marca_dagua) {
+        console.log("💎 Cupom VIP detectado: Marca d'água REMOVIDA.");
+        setRemoveMarcaDagua(true);
+      } else {
+        console.log("🏷️ Cupom Padrão ou Sem Cupom: Marca d'água ATIVA.");
+        setRemoveMarcaDagua(false);
+      }
+    } else {
+      setRemoveMarcaDagua(false); // Sem cupom = Com marca
+    }
+
     setLoading(false);
   };
 
@@ -225,63 +254,62 @@ const GuestPage = () => {
     }
   };
 
-  // --- DOWNLOAD COM MARCA D'ÁGUA (UPDATED) ---
+  // --- DOWNLOAD INTELIGENTE (BASEADO NO BANCO) ---
   const handleDownloadFoto = (url) => {
     const img = new window.Image();
-    img.crossOrigin = "anonymous"; // Essencial para baixar do Supabase
+    img.crossOrigin = "anonymous";
     img.src = url;
-    document.title = "Preparando Download...";
+    document.title = "Baixando...";
+
+    // A Lógica agora é limpa: O banco já disse se remove ou não
+    const deveAplicarMarca = !removeMarcaDagua; // Se removeMarcaDagua for true, aplicar é false.
 
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
 
-      // Define o tamanho do canvas igual ao da imagem original
       canvas.width = img.width;
       canvas.height = img.height;
 
-      // 1. Desenha a foto original
+      // Desenha foto original
       ctx.drawImage(img, 0, 0);
 
-      // 2. Prepara a Marca D'água
-      const watermark = new window.Image();
-      watermark.src = poweredImage;
-      watermark.crossOrigin = "anonymous";
+      if (deveAplicarMarca) {
+        // --- APLICA MARCA D'ÁGUA ---
+        const watermark = new window.Image();
+        watermark.src = poweredImage;
+        watermark.crossOrigin = "anonymous";
 
-      watermark.onload = () => {
-        // Lógica de posicionamento (30% da largura, centralizado embaixo)
-        const wmWidth = canvas.width * 0.3;
-        const aspectRatio = watermark.height / watermark.width;
-        const wmHeight = wmWidth * aspectRatio;
+        watermark.onload = () => {
+          const wmWidth = canvas.width * 0.3; // 30% da largura
+          const aspectRatio = watermark.height / watermark.width;
+          const wmHeight = wmWidth * aspectRatio;
 
-        const x = (canvas.width - wmWidth) / 2;
-        const y = canvas.height - wmHeight - 30; // 30px de margem inferior
+          const x = (canvas.width - wmWidth) / 2;
+          const y = canvas.height - wmHeight - 30;
 
-        // Sombra suave para destacar se o fundo for claro
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4;
+          ctx.shadowColor = "rgba(0,0,0,0.5)";
+          ctx.shadowBlur = 15;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 4;
 
-        // Desenha a marca d'água
-        ctx.drawImage(watermark, x, y, wmWidth, wmHeight);
+          ctx.drawImage(watermark, x, y, wmWidth, wmHeight);
+          saveCanvas(canvas);
+        };
 
-        // Salva o resultado
+        watermark.onerror = () => {
+          // Se falhar a marca, baixa sem ela mesmo (melhor que travar)
+          saveCanvas(canvas);
+        };
+      } else {
+        // --- BAIXA LIMPA (VIP/PARCEIRO) ---
         saveCanvas(canvas);
-      };
-
-      // Se a marca d'água falhar (não carregar), baixa a foto sem ela mesmo
-      watermark.onerror = () => {
-        console.warn(
-          "Não foi possível carregar a marca d'água. Baixando original."
-        );
-        saveCanvas(canvas);
-      };
+      }
     };
 
     img.onerror = () => {
       alert("Erro ao processar imagem.");
-      saveOriginal(url); // Fallback: baixa o link direto
+      saveOriginal(url);
     };
   };
 
@@ -300,7 +328,7 @@ const GuestPage = () => {
         document.title = "Memora";
       },
       "image/jpeg",
-      0.95 // Qualidade JPG
+      0.95
     );
   };
 
@@ -595,7 +623,7 @@ const GuestPage = () => {
             </p>
           </div>
           <label htmlFor="foto-entry" className="profile-photo-block">
-            <Image size={32} />
+            <ImageIcon size={32} />
             <span className="photo-label">
               {fotoPerfil ? "Foto selecionada" : "Foto de Perfil"}
             </span>
@@ -754,7 +782,7 @@ const GuestPage = () => {
                     onChange={handleArquivoGaleria}
                   />
                   <label htmlFor="galeria-cam" className="botao-galeria">
-                    <Image />
+                    <ImageIcon />
                   </label>
                   <button
                     className="botao-disparo"
@@ -817,7 +845,6 @@ const GuestPage = () => {
                     <button
                       onClick={() => setIsEditingName(false)}
                       className="btn-edit-name"
-                      disabled={loading}
                     >
                       <XCircle size={20} color="#ef4444" />
                     </button>
