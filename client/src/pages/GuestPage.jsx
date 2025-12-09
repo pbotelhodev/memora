@@ -19,7 +19,7 @@ import { supabase } from "../services/supabaseClient";
 import "../styles/GuestPage.css";
 import { nanoid } from "nanoid";
 import logoMemora from "../assets/logo-memora.png";
-import poweredImage from "../assets/powered-memora.png";
+import poweredImage from "../assets/logo-full.png";
 
 const GuestPage = () => {
   const { slug } = useParams();
