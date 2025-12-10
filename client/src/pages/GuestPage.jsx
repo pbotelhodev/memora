@@ -12,7 +12,7 @@ import {
   Save,
   XCircle,
   Loader2,
-  Lock, // Importado para caso a festa encerre (regra 12h visual)
+  Lock,
 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
@@ -20,7 +20,6 @@ import "../styles/GuestPage.css";
 import { nanoid } from "nanoid";
 import logoMemora from "../assets/logo-memora.png";
 import poweredImage from "../assets/logo-full.png";
-// IMPORT DA REGRA DE TEMPO
 import { podePostarFoto } from "../utils/dateRules";
 
 const GuestPage = () => {
@@ -67,12 +66,11 @@ const GuestPage = () => {
   const canvasRef = useRef(null);
   const formRef = useRef(null);
 
-  // --- FUNÇÕES DE BD (BUSCAR FESTA + REGRA DO CUPOM) ---
+  // --- 1. BUSCAR FESTA (COM CORREÇÃO DO NOME DA COLUNA DO CUPOM) ---
   const buscarFesta = async () => {
     setLoading(true);
     setErro(false);
 
-    // 1. Busca dados da festa
     const { data: festaData, error } = await supabase
       .from("festas")
       .select("*")
@@ -88,15 +86,18 @@ const GuestPage = () => {
 
     setFesta(festaData);
 
-    // 2. VERIFICAÇÃO DO CUPOM NO BANCO DE DADOS
-    if (festaData.cupom) {
+    // 🔥 LÓGICA DA MARCA D'ÁGUA (Prioriza cupom_usado)
+    const codigoCupom = festaData.cupom_usado || festaData.cupom;
+
+    if (codigoCupom) {
       const { data: cupomData } = await supabase
         .from("cupons")
         .select("remove_marca_dagua")
-        .eq("codigo", festaData.cupom)
+        .eq("codigo", codigoCupom)
         .maybeSingle();
 
       if (cupomData?.remove_marca_dagua) {
+        console.log("💎 Cupom VIP: Marca d'água removida!");
         setRemoveMarcaDagua(true);
       } else {
         setRemoveMarcaDagua(false);
@@ -119,6 +120,33 @@ const GuestPage = () => {
     return true;
   };
 
+  // --- CARREGAR PERFIL (CORRIGIDO COM FILTRO DE FESTA) ---
+  const carregarDadosConvidado = async () => {
+    if (!festa?.id) return null;
+
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from("convidados")
+        .select("nome, foto_perfil_url")
+        .eq("auth_id", userData.user.id)
+        .eq("festa_id", festa.id) // 🔥 IMPORTANTE: Filtra pela festa certa
+        .maybeSingle();
+
+      if (error) {
+        console.error("Erro perfil:", error);
+        return null;
+      }
+      return data;
+    } catch (err) {
+      console.error("Erro crítico perfil:", err);
+      return null;
+    }
+  };
+
+  // --- UPLOAD ---
   const enviarParaUpload = async (fotoBlob, nomeArquivo) => {
     setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
@@ -141,15 +169,12 @@ const GuestPage = () => {
     return data.path;
   };
 
-  // --- BUSCA DO FEED COM PAGINAÇÃO ---
+  // --- FEED ---
   const buscarFotosDoFeed = async (pageNumber = 0) => {
     if (!festa?.id) return;
 
-    if (pageNumber === 0) {
-      setLoading(true);
-    } else {
-      setLoadingMore(true);
-    }
+    if (pageNumber === 0) setLoading(true);
+    else setLoadingMore(true);
 
     const from = pageNumber * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
@@ -162,17 +187,13 @@ const GuestPage = () => {
       .range(from, to);
 
     if (error) {
-      console.error("Erro feed:", error);
       setLoading(false);
       setLoadingMore(false);
       return;
     }
 
-    if (fotosData.length < PAGE_SIZE) {
-      setHasMore(false);
-    } else {
-      setHasMore(true);
-    }
+    if (fotosData.length < PAGE_SIZE) setHasMore(false);
+    else setHasMore(true);
 
     if (!fotosData || fotosData.length === 0) {
       if (pageNumber === 0) setFotosFeed([]);
@@ -195,11 +216,8 @@ const GuestPage = () => {
       };
     });
 
-    if (pageNumber === 0) {
-      setFotosFeed(feedMapeado);
-    } else {
-      setFotosFeed((prev) => [...prev, ...feedMapeado]);
-    }
+    if (pageNumber === 0) setFotosFeed(feedMapeado);
+    else setFotosFeed((prev) => [...prev, ...feedMapeado]);
 
     setPage(pageNumber);
     setLoading(false);
@@ -216,6 +234,7 @@ const GuestPage = () => {
     buscarFotosDoFeed(0);
   };
 
+  // --- FOTOS PERFIL ---
   const buscarFotosDoPerfil = async () => {
     if (!festa?.id) return;
     const { data: userData } = await supabase.auth.getUser();
@@ -253,54 +272,45 @@ const GuestPage = () => {
     }
   };
 
-  // --- DOWNLOAD INTELIGENTE ---
+  // --- DOWNLOAD ---
   const handleDownloadFoto = (url) => {
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.src = url;
     document.title = "Baixando...";
 
+    // Se removeMarcaDagua for true, NÃO aplica (deveAplicar = false)
     const deveAplicarMarca = !removeMarcaDagua;
 
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-
       canvas.width = img.width;
       canvas.height = img.height;
-
       ctx.drawImage(img, 0, 0);
 
       if (deveAplicarMarca) {
         const watermark = new window.Image();
         watermark.src = poweredImage;
         watermark.crossOrigin = "anonymous";
-
         watermark.onload = () => {
           const wmWidth = canvas.width * 0.3;
           const aspectRatio = watermark.height / watermark.width;
           const wmHeight = wmWidth * aspectRatio;
-
           const x = (canvas.width - wmWidth) / 2;
           const y = canvas.height - wmHeight - 30;
-
           ctx.shadowColor = "rgba(0,0,0,0.5)";
           ctx.shadowBlur = 15;
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = 4;
-
           ctx.drawImage(watermark, x, y, wmWidth, wmHeight);
           saveCanvas(canvas);
         };
-
-        watermark.onerror = () => {
-          saveCanvas(canvas);
-        };
+        watermark.onerror = () => saveCanvas(canvas);
       } else {
         saveCanvas(canvas);
       }
     };
-
     img.onerror = () => {
       alert("Erro ao processar imagem.");
       saveOriginal(url);
@@ -336,17 +346,14 @@ const GuestPage = () => {
     document.body.removeChild(link);
   };
 
-  // --- CÂMERA LOGIC ---
+  // --- CÂMERA ---
   const handleDisparoCamera = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
-
     const targetAspectRatio = 4 / 5;
-
     let cropWidth, cropHeight, dx, dy;
 
     if (videoWidth / videoHeight > targetAspectRatio) {
@@ -363,7 +370,6 @@ const GuestPage = () => {
 
     canvas.width = cropWidth;
     canvas.height = cropHeight;
-
     canvas
       .getContext("2d")
       .drawImage(
@@ -377,7 +383,6 @@ const GuestPage = () => {
         cropWidth,
         cropHeight
       );
-
     canvas.toBlob(
       (blob) => {
         if (blob) {
@@ -410,7 +415,10 @@ const GuestPage = () => {
         const { data } = supabase.storage
           .from("fotos-eventos")
           .getPublicUrl(url);
+
         await atualizarFotoPerfilConvidado(data.publicUrl);
+
+        // Atualiza estado local na hora
         setDadosPerfil((prev) => ({
           ...prev,
           foto_perfil_url: data.publicUrl,
@@ -428,7 +436,7 @@ const GuestPage = () => {
     setPreviewUrl(null);
   };
 
-  // --- FUNÇÕES DE EDIÇÃO DE NOME ---
+  // --- EDIÇÃO NOME ---
   const handleEditClick = () => {
     if (dadosPerfil?.nome) {
       setTempUserName(dadosPerfil.nome);
@@ -438,25 +446,24 @@ const GuestPage = () => {
 
   const handleSaveNewName = async () => {
     if (!tempUserName.trim()) return;
-
     setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
     const { error } = await supabase
       .from("convidados")
       .update({ nome: tempUserName })
-      .eq("auth_id", userData.user.id);
+      .eq("auth_id", userData.user.id)
+      .eq("festa_id", festa.id); // 🔥 Segurança extra
 
     setLoading(false);
     if (!error) {
       setDadosPerfil((prev) => ({ ...prev, nome: tempUserName }));
       setIsEditingName(false);
     } else {
-      console.error("Erro ao salvar nome:", error);
-      alert("Falha ao salvar nome. Tente novamente.");
+      alert("Falha ao salvar nome.");
     }
   };
 
-  // --- ENTRY E PERFIL ---
+  // --- 2. ENTRY E PERFIL (CORRIGIDO) ---
   const handleEntrySubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -472,6 +479,8 @@ const GuestPage = () => {
 
     const { data: userData } = await supabase.auth.getUser();
     const newGuestId = nanoid(10);
+
+    // 🔥 Upsert usando a chave composta para evitar duplicatas
     const { error } = await supabase.from("convidados").upsert(
       [
         {
@@ -481,13 +490,16 @@ const GuestPage = () => {
           nome: nomeConvidado,
         },
       ],
-      { onConflict: "auth_id" }
+      { onConflict: "auth_id, festa_id" }
     );
 
     if (error) {
+      console.error("Erro entry:", error);
       setLoading(false);
       return;
     }
+
+    let fotoUrlFinal = null;
     if (fotoPerfil) {
       const uniqueId = nanoid(8);
       const url = await enviarParaUpload(
@@ -498,9 +510,13 @@ const GuestPage = () => {
         const { data } = supabase.storage
           .from("fotos-eventos")
           .getPublicUrl(url);
+        fotoUrlFinal = data.publicUrl;
         await atualizarFotoPerfilConvidado(data.publicUrl);
       }
     }
+
+    // Carrega o estado do perfil na hora
+    setDadosPerfil({ nome: nomeConvidado, foto_perfil_url: fotoUrlFinal });
     localStorage.setItem("memora_guest_nanoID", newGuestId);
     setLocalUserId(newGuestId);
     setMostrarEntry(false);
@@ -508,23 +524,13 @@ const GuestPage = () => {
     setAbaAtiva("feed");
   };
 
-  const carregarDadosConvidado = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return null;
-    const { data } = await supabase
-      .from("convidados")
-      .select("nome, foto_perfil_url")
-      .eq("auth_id", userData.user.id)
-      .single();
-    return data;
-  };
-
   const atualizarFotoPerfilConvidado = async (url) => {
     const { data: u } = await supabase.auth.getUser();
     await supabase
       .from("convidados")
       .update({ foto_perfil_url: url })
-      .eq("auth_id", u.user.id);
+      .eq("auth_id", u.user.id)
+      .eq("festa_id", festa.id); // 🔥 Filtra pela festa
   };
 
   const handleArquivoGaleria = async (event) => {
@@ -564,12 +570,37 @@ const GuestPage = () => {
     if (savedId) {
       setLocalUserId(savedId);
       ensureGuestAuth().then((ok) => {
-        if (ok) setMostrarEntry(false);
-        else setMostrarEntry(true);
+        if (ok) {
+          setMostrarEntry(false);
+        } else {
+          setMostrarEntry(true);
+        }
       });
-    } else setMostrarEntry(true);
+    } else {
+      setMostrarEntry(true);
+    }
   }, [slug]);
 
+  // 🔥 EFFECT UNIFICADO: Carrega dados quando entra na festa
+  useEffect(() => {
+    if (festa?.id && !mostrarEntry) {
+      // Carrega Feed
+      if (abaAtiva === "feed") {
+        buscarFotosDoFeed(0);
+      }
+
+      // Sempre tenta carregar perfil ao entrar/trocar aba
+      carregarDadosConvidado().then((d) => {
+        if (d) setDadosPerfil(d);
+      });
+
+      if (abaAtiva === "perfil") {
+        buscarFotosDoPerfil();
+      }
+    }
+  }, [abaAtiva, festa?.id, mostrarEntry]);
+
+  // Câmera
   useEffect(() => {
     let currentStream = null;
     if (abaAtiva === "camera" && !previewUrl) {
@@ -580,7 +611,6 @@ const GuestPage = () => {
           height: { ideal: 2160 },
         },
       };
-
       navigator.mediaDevices
         .getUserMedia(constraints)
         .then((s) => {
@@ -589,23 +619,13 @@ const GuestPage = () => {
         })
         .catch((e) => console.error("Erro Cam:", e));
     }
-    if (festa?.id && localUserId) {
-      if (abaAtiva === "feed") buscarFotosDoFeed(0);
-      if (abaAtiva === "perfil") {
-        carregarDadosConvidado().then((d) => d && setDadosPerfil(d));
-        buscarFotosDoPerfil();
-      }
-    }
     return () => {
       if (currentStream) currentStream.getTracks().forEach((t) => t.stop());
     };
-  }, [abaAtiva, facingMode, festa?.id, localUserId, previewUrl]);
+  }, [abaAtiva, facingMode, previewUrl]);
 
-  // --- CHECAGEM DE HORÁRIO PARA POSTAGEM ---
-  // Verifica se ainda está dentro das 12h do dia seguinte
   const podePostar = festa ? podePostarFoto(festa.data_festa) : false;
 
-  // --- RENDER ---
   if (mostrarEntry) {
     return (
       <div className="container-guest entry-page-layout">
@@ -655,7 +675,6 @@ const GuestPage = () => {
         <h1 className="title-error">404</h1>
       </div>
     );
-
   if (!festa)
     return (
       <div className="container-guest">
@@ -669,7 +688,7 @@ const GuestPage = () => {
         <header className="header-party">
           <h1 className="header-gradient-title">{festa?.nome_festa}</h1>
           <button className="btn-refresh" onClick={handleRefresh}>
-            <RefreshCw size={15} />
+            <RefreshCw size={20} color="currentColor" />
           </button>
         </header>
       )}
@@ -680,7 +699,6 @@ const GuestPage = () => {
             {loading && fotosFeed.length === 0 && (
               <p className="loading-text">Carregando...</p>
             )}
-
             {!loading && fotosFeed.length > 0 ? (
               <div className="photos-list-column">
                 {fotosFeed.map((foto) => (
@@ -694,7 +712,8 @@ const GuestPage = () => {
                         />
                       ) : (
                         <div className="card-avatar-placeholder">
-                          <User size={14} />
+                          {" "}
+                          <User size={14} />{" "}
                         </div>
                       )}
                       <span className="card-username">
@@ -712,7 +731,6 @@ const GuestPage = () => {
                     </div>
                   </div>
                 ))}
-
                 {hasMore && (
                   <div className="load-more-container">
                     <button
@@ -737,7 +755,6 @@ const GuestPage = () => {
             {previewUrl ? (
               <div className="preview-mode-container">
                 <img src={previewUrl} alt="Preview" className="preview-image" />
-
                 <div className="camera-controles-strip preview-controls">
                   <button
                     onClick={handleDescartarFoto}
@@ -806,7 +823,7 @@ const GuestPage = () => {
 
         {abaAtiva === "perfil" && (
           <div className="profile-page-container">
-            {dadosPerfil && (
+            {dadosPerfil ? (
               <div className="profile-card">
                 <div className="profile-photo-wrapper">
                   {dadosPerfil.foto_perfil_url ? (
@@ -821,7 +838,6 @@ const GuestPage = () => {
                     </div>
                   )}
                 </div>
-
                 {isEditingName ? (
                   <div className="profile-name-edit-wrapper">
                     <input
@@ -859,7 +875,6 @@ const GuestPage = () => {
                     </button>
                   </div>
                 )}
-
                 <button
                   className="btn-entry-primary btn-profile-edit"
                   onClick={() => {
@@ -871,8 +886,11 @@ const GuestPage = () => {
                   Trocar Foto de Perfil
                 </button>
               </div>
+            ) : (
+              <div className="profile-card">
+                <p>Carregando perfil...</p>
+              </div>
             )}
-
             <div className="profile-photos-grid">
               {fotosPerfil.length > 0 ? (
                 fotosPerfil.map((foto) => (
@@ -907,19 +925,17 @@ const GuestPage = () => {
           <Home size={24} />
           <span className="nav-label">Feed</span>
         </button>
-
-        {/* --- BOTÃO DE CÂMERA (LÓGICA 12H) --- */}
         <button
           className={`nav-item ${abaAtiva === "camera" ? "active" : ""} ${
             !podePostar ? "disabled" : ""
-          }`} // Adiciona classe disabled
+          }`}
           onClick={() => {
             if (podePostar) {
               setModoCamera("feed");
               setAbaAtiva("camera");
             }
           }}
-          disabled={!podePostar} // Desabilita o clique real
+          disabled={!podePostar}
         >
           {podePostar ? (
             <>
@@ -933,7 +949,6 @@ const GuestPage = () => {
             </>
           )}
         </button>
-
         <button
           className={`nav-item ${abaAtiva === "perfil" ? "active" : ""}`}
           onClick={() => setAbaAtiva("perfil")}

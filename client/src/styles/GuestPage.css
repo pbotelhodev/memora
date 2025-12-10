@@ -5,21 +5,36 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   padding: 0;
   background-color: #0f172a; /* Fundo principal escuro */
   font-family: "Poppins", sans-serif;
   color: #f8fafc;
+
+  /* 🔥 TRAVA ROLAGEM GLOBAL PARA APP FEELING 🔥 */
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* Container principal para o app mobile */
 .container-guest {
-  max-width: 600px; /* Limita largura para simular app mobile */
+  max-width: 600px; /* Limita largura para simular app mobile no PC */
   margin: 0 auto;
+
+  /* Altura dinâmica real do dispositivo */
+  height: 100dvh;
   min-height: 100dvh;
+
   background-color: #0f172a;
   padding-bottom: 70px; /* Espaço para a barra de navegação */
+  position: relative;
+
+  /* Permite rolagem apenas no conteúdo interno (Feed/Perfil) */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* --- TELA DE ENTRADA (ENTRY PAGE) --- */
@@ -28,8 +43,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 20px;
+  position: fixed; /* Garante que fique por cima */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 200;
+  background-color: #0f172a;
 }
 
 .entry-form-box {
@@ -134,6 +155,7 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
+  height: 100dvh;
 }
 .title-error {
   font-size: 3rem;
@@ -168,23 +190,25 @@ body {
 .btn-refresh {
   background: transparent;
   border: none;
-  box-shadow: none; 
+  box-shadow: none;
   color: #94a3b8;
   border-radius: 50%;
-  padding: 0px;
+  padding: 10px;
   display: flex;
   align-items: center;
-  display: 10px;
+  justify-content: center;
   cursor: pointer;
   transition: transform 0.3s ease, color 0.2s;
 }
 .btn-refresh:hover {
   color: #06b6d4;
-  background: transparent; /* Garante que não aparece fundo no hover */
+  transform: rotate(180deg);
+  background: transparent;
 }
 
 .feed-container {
   padding: 20px 0;
+  min-height: calc(100dvh - 140px);
 }
 
 .photos-list-column {
@@ -233,7 +257,7 @@ body {
 
 .card-image-wrapper {
   width: 100%;
-  aspect-ratio: 1 / 1; /* Padrão retrato que definimos */
+  aspect-ratio: 4 / 5; /* Padrão retrato */
   overflow: hidden;
   background: black;
 }
@@ -296,7 +320,7 @@ body {
 }
 
 /* ==========================================================================
-   CÂMERA
+   CÂMERA (CORRIGIDA E BLINDADA)
    ========================================================================== */
 
 .camera-container {
@@ -305,31 +329,36 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0;
-  position: relative;
+  position: fixed; /* Overlay total */
+  top: 0;
+  left: 0;
   width: 100%;
-  max-width: 100%;
+  height: 100dvh; /* Altura total dinâmica */
+  background: #000;
+  z-index: 50;
+  overflow: hidden;
 }
 
 .camera-header-warning {
   width: 100%;
   text-align: center;
-  background: #475569;
+  background: rgba(71, 85, 105, 0.9);
   color: white;
-  padding: 10px;
+  padding: 15px 10px;
   font-size: 0.9rem;
   font-weight: 600;
-  top: 66px; /* Abaixo do header fixo */
-  z-index: 5;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  backdrop-filter: blur(4px);
 }
 
 .video-preview {
-  width: 100vw;
-  height: auto;
-  aspect-ratio: 3 / 4;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
-  margin: 60px 0;
-  overflow: hidden;
 }
 
 .mirrored {
@@ -340,117 +369,161 @@ body {
   display: none;
 }
 
-/* CONTROLES DA CÂMERA */
+/* --- BARRA DE CONTROLES (SEM VAZAR) --- */
 .camera-controles-strip {
-  position: fixed;
-  bottom: 70px;
+  position: absolute;
+  bottom: 70px; /* Acima da navbar (70px) */
   left: 0;
   width: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
-  padding: 20px 0;
+  height: 140px; /* Altura fixa para o gradiente */
+
+  /* Gradiente moderno */
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+
   display: flex;
   justify-content: space-around;
   align-items: center;
-  z-index: 100;
+  z-index: 60;
+  padding-bottom: 10px;
+  box-sizing: border-box;
 }
 
-/* Controles no modo Preview */
-.preview-controls {
-  position: fixed; /* Fixa na tela, igual à barra de disparo */
-  bottom: 70px;    /* Mesma altura: logo acima da navbar */
-  left: 0;
-  width: 100%;     /* Ocupa a largura toda */
-  height: auto;    /* Altura automática baseada no conteúdo */
-  
-  background: rgba(0, 0, 0, 0.7); /* Fundo escuro igual ao da câmera */
-  backdrop-filter: blur(5px);
-  
-  padding: 20px 0;
-  display: flex;
-  justify-content: space-around; /* Espalha os botões (X e Check) */
-  align-items: center;
-  z-index: 100;
-  
-  /* Remove qualquer top/left antigo que estava prendendo ele na imagem */
-  top: auto; 
-}
-
-.preview-mode-container {
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  position: relative;
-}
-
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  margin-top: 70px; 
-}
-
-.btn-action-cancel,
-.btn-action-confirm {
-  background: none;
-  border: none;
-  cursor: pointer;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  transition: transform 0.2s;
-}
-
-.btn-action-cancel {
-  background: #ef4444;
-  border-radius: 50%;
-  padding: 15px;
-}
-.btn-action-confirm {
-  background: #10b981;
-  border-radius: 50%;
-  padding: 15px;
-}
-
-.btn-action-cancel:active,
-.btn-action-confirm:active {
-  transform: scale(0.9);
-}
-
+/* Botões laterais (Galeria / Flip) */
 .botao-galeria,
 .botao-flip {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   color: white;
   border-radius: 50%;
-  padding: 10px;
+
+  /* Tamanho FIXO E TRAVADO */
+  width: 48px;
+  height: 48px;
+  min-width: 48px; /* Impede encolher */
+
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: transform 0.2s;
+  backdrop-filter: blur(4px);
+  flex-shrink: 0; /* IMPEDE ESMAGAR NO FLEXBOX */
 }
 
+.botao-galeria:hover,
+.botao-flip:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(1.05);
+}
+
+/* --- BOTÃO DE DISPARO (REDONDO PERFEITO) --- */
 .botao-disparo {
-  width: 70px;
-  height: 70px;
+  /* Tamanho FIXO E TRAVADO */
+  width: 76px;
+  height: 76px;
+  min-width: 76px; /* Impede encolher */
+  max-width: 76px;
+
   background: transparent;
-  border: 4px solid #a855f7;
+  border: 4px solid white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: transform 0.1s;
+  padding: 4px;
+  flex-shrink: 0; /* IMPEDE ESMAGAR NO FLEXBOX */
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .botao-disparo-interno {
-  padding: 27px;
+  width: 100%;
+  height: 100%;
   background: #a855f7;
   border-radius: 50%;
+  transition: transform 0.1s;
 }
 
 .botao-disparo:active {
   transform: scale(0.95);
+}
+.botao-disparo:active .botao-disparo-interno {
+  transform: scale(0.85);
+}
+
+/* --- TELA DE PREVIEW (FOTO TIRADA) --- */
+.preview-mode-container {
+  width: 100%;
+  height: 100dvh;
+  position: relative;
+  background: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Controles do Preview */
+.preview-controls {
+  position: absolute;
+  bottom: 70px; /* Acima da navbar */
+  left: 0;
+  width: 100%;
+  height: 120px;
+
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 61;
+  padding-bottom: 10px;
+}
+
+.btn-action-cancel,
+.btn-action-confirm {
+  width: 60px;
+  height: 60px;
+  min-width: 60px; /* Trava tamanho */
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.btn-action-cancel {
+  background: #ef4444;
+  color: white;
+}
+.btn-action-confirm {
+  background: #10b981;
+  color: white;
+}
+
+.btn-action-cancel:active,
+.btn-action-confirm:active {
+  transform: scale(0.9);
 }
 
 /* ==========================================================================
@@ -459,6 +532,7 @@ body {
 
 .profile-page-container {
   padding: 20px;
+  min-height: calc(100dvh - 70px);
 }
 
 .profile-card {
@@ -606,6 +680,7 @@ body {
   justify-content: space-around;
   box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.3);
   z-index: 100;
+  height: 70px;
 }
 
 .nav-item {
