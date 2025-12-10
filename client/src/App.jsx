@@ -7,7 +7,7 @@ import { ROUTES } from "./routes";
 import DashboardPage from "./pages/DashboardPage";
 import GuestPage from "./pages/GuestPage";
 import PainelAdmin from "./pages/PainelAdmin";
-import AdminDashboard from "./pages/adminDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import AffiliatePage from "./pages/AffiliatePage";
 
 function App() {
