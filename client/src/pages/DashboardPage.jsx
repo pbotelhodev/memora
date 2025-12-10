@@ -26,6 +26,9 @@ import {
 import PaymentModal from "../components/PaymentModal";
 import "../styles/DashboardPage.css";
 
+// IMPORT DA REGRA DE TEMPO (NOVO)
+import { isDownloadLiberado, getPrazoLimite } from "../utils/dateRules";
+
 // ASSETS
 import templateImg from "../assets/template-plaquinha.png";
 import poppinsFont from "../assets/Poppins-Bold.ttf";
@@ -208,17 +211,28 @@ const DashboardPage = () => {
     return () => clearInterval(interval);
   }, [isTvMode, photos]);
 
-  const checkDownloadAvailability = () => {
-    if (!eventData) return { available: false, date: "" };
-    const eventDate = new Date(eventData.data_festa + "T00:00:00");
-    const unlockDate = new Date(eventDate);
-    unlockDate.setDate(eventDate.getDate() + 2);
-    const now = new Date();
-    return {
-      available: now >= unlockDate,
-      unlockDateStr: unlockDate.toLocaleDateString("pt-BR"),
-    };
+  // --- NOVA LÓGICA DE DOWNLOAD (12H) ---
+  const checkDownloadStatus = () => {
+    if (!eventData) return { available: false, label: "..." };
+
+    const liberado = isDownloadLiberado(eventData.data_festa);
+
+    if (liberado) {
+      return { available: true, label: "Liberado" };
+    } else {
+      const dataLimite = getPrazoLimite(eventData.data_festa);
+      // Formata a data bonitinha: "12/10 às 12:00"
+      const dataFormatada = dataLimite
+        ? dataLimite.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+          }) + " às 12:00"
+        : "";
+      return { available: false, label: dataFormatada };
+    }
   };
+
+  const downloadStatus = checkDownloadStatus();
 
   const handleDownloadZip = async () => {
     if (photos.length === 0) return alert("Sem fotos para baixar.");
@@ -351,7 +365,7 @@ const DashboardPage = () => {
   const handleWhatsappShare = () => {
     window.open(
       `https://wa.me/?text=${encodeURIComponent(
-        `Oi pessoal! Postem o seu momento aqui: ${window.location.origin}/feed/${slug}`
+        `Galera, postem as fotos aqui: ${window.location.origin}/feed/${slug}`
       )}`
     );
   };
@@ -360,7 +374,6 @@ const DashboardPage = () => {
     return <div className="loading-screen">Carregando painel...</div>;
   if (!eventData)
     return <div className="error-screen">Evento não encontrado.</div>;
-  const downloadStatus = checkDownloadAvailability();
 
   return (
     <div className="dashboard-container">
@@ -375,20 +388,25 @@ const DashboardPage = () => {
           className="photo-modal-overlay"
           onClick={() => setSelectedPhoto(null)}
         >
+          {" "}
           <div
             className="photo-modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <img src={selectedPhoto.url_final} alt="Zoom" />
+            {" "}
+            <img src={selectedPhoto.url_final} alt="Zoom" />{" "}
             <button
               className="btn-close-modal"
               onClick={() => setSelectedPhoto(null)}
             >
-              <X size={24} />
-            </button>
+              {" "}
+              <X size={24} />{" "}
+            </button>{" "}
             <div className="modal-info-bar">
-              <span>👤 {selectedPhoto.nome_final}</span>
+              {" "}
+              <span>👤 {selectedPhoto.nome_final}</span>{" "}
               <div className="modal-actions-group">
+                {" "}
                 <button
                   className="btn-modal-action download"
                   onClick={() =>
@@ -398,45 +416,55 @@ const DashboardPage = () => {
                     )
                   }
                 >
-                  <Download size={20} />
-                </button>
+                  {" "}
+                  <Download size={20} />{" "}
+                </button>{" "}
                 <button
                   className="btn-modal-action delete"
                   onClick={() =>
                     handleDeletePhoto(selectedPhoto.id, selectedPhoto.url_final)
                   }
                 >
-                  <Trash2 size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
+                  {" "}
+                  <Trash2 size={20} />{" "}
+                </button>{" "}
+              </div>{" "}
+            </div>{" "}
+          </div>{" "}
         </div>
       )}
 
       {isTvMode && (
         <div className="tv-overlay">
+          {" "}
           <button className="btn-close-tv" onClick={() => setIsTvMode(false)}>
-            <X size={20} />
-          </button>
+            {" "}
+            <X size={40} />{" "}
+          </button>{" "}
           <div className="tv-layout-container">
+            {" "}
             <div className="tv-side-column left">
+              {" "}
               <div className="tv-qr-box">
-                <p>Participe!</p>
+                {" "}
+                <p>Participe!</p>{" "}
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=https://www.appmemora.com.br/feed/${eventData.slug}`}
                   alt="QR Code"
-                />
-                <span>Aponte a câmera</span>
-              </div>
+                />{" "}
+                <span>Aponte a câmera</span>{" "}
+              </div>{" "}
               <div className="tv-side-watermark animate-fade">
                 <img src={logoFull || ""} alt="Memora" />
-              </div>
-            </div>
+              </div>{" "}
+            </div>{" "}
             <div className="tv-center-column">
+              {" "}
               {photos.length > 0 ? (
                 <div className="tv-card-display animate-fade">
+                  {" "}
                   <div className="tv-card-header">
+                    {" "}
                     {photos[currentSlide].foto_autor ? (
                       <img
                         src={photos[currentSlide].foto_autor}
@@ -448,61 +476,67 @@ const DashboardPage = () => {
                       <div className="tv-avatar-placeholder">
                         {(photos[currentSlide].nome_final || "A").charAt(0)}
                       </div>
-                    )}
+                    )}{" "}
                     <span className="tv-username">
                       {photos[currentSlide].nome_final}
-                    </span>
-                  </div>
+                    </span>{" "}
+                  </div>{" "}
                   <div className="tv-card-image-wrapper">
+                    {" "}
                     <img
                       src={
                         photos[currentSlide].url_final ||
                         photos[currentSlide].url
                       }
                       alt="Slide"
-                    />
-                  </div>
+                    />{" "}
+                  </div>{" "}
                 </div>
               ) : (
                 <div className="tv-empty-state">
-                  <h1>Aguardando fotos...</h1>
-                  <p>Seja o primeiro a aparecer no telão!</p>
+                  {" "}
+                  <h1>Aguardando fotos...</h1>{" "}
+                  <p>Seja o primeiro a aparecer no telão!</p>{" "}
                 </div>
-              )}
-            </div>
+              )}{" "}
+            </div>{" "}
             <div className="tv-side-column right">
+              {" "}
               <div className="tv-qr-box">
-                <p>Participe!</p>
+                {" "}
+                <p>Participe!</p>{" "}
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=https://www.appmemora.com.br/feed/${eventData.slug}`}
                   alt="QR Code"
-                />
-                <span>Aponte a câmera</span>
-              </div>
+                />{" "}
+                <span>Aponte a câmera</span>{" "}
+              </div>{" "}
               <div className="tv-side-watermark animate-fade">
                 <img src={logoFull || ""} alt="Memora" />
-              </div>
-            </div>
-          </div>
+              </div>{" "}
+            </div>{" "}
+          </div>{" "}
         </div>
       )}
 
       <header>
         <div className="header-profile-area">
           <div className="header-profile">
+            {" "}
             <div className="avatar-circle">
               {eventData.nome_cliente.charAt(0)}
-            </div>
+            </div>{" "}
             <span className="welcome-text">
               <p>
                 Olá, <strong>{eventData.nome_cliente.split(" ")[0]}</strong>
               </p>
-            </span>
+            </span>{" "}
           </div>
           <Link to={ROUTES.HOME}>
+            {" "}
             <button className="btn-logout" title="Sair">
               <LogOut size={20} />
-            </button>
+            </button>{" "}
           </Link>
         </div>
       </header>
@@ -510,39 +544,44 @@ const DashboardPage = () => {
       <div className="dashboard-content">
         <div className="event-status-bar">
           <div className="event-info">
-            <p>Gerenciando evento:</p>
+            {" "}
+            <p>Gerenciando evento:</p>{" "}
             {isEditingName ? (
               <div className="edit-title-wrapper">
+                {" "}
                 <input
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   className="input-title-edit"
                   autoFocus
-                />
+                />{" "}
                 <div className="edit-actions">
+                  {" "}
                   <button
                     onClick={handleUpdateName}
                     className="btn-icon-action save"
                     disabled={isSavingName}
                   >
+                    {" "}
                     {isSavingName ? (
                       <Loader2 size={20} className="spin" />
                     ) : (
                       <Check size={20} />
-                    )}
-                  </button>
+                    )}{" "}
+                  </button>{" "}
                   <button
                     onClick={() => setIsEditingName(false)}
                     className="btn-icon-action cancel"
                   >
                     <X size={20} />
-                  </button>
-                </div>
+                  </button>{" "}
+                </div>{" "}
               </div>
             ) : (
               <div className="title-display-wrapper">
-                <h1>{eventData.nome_festa}</h1>
+                {" "}
+                <h1>{eventData.nome_festa}</h1>{" "}
                 <button
                   className="btn-edit-pencil"
                   onClick={() => {
@@ -552,22 +591,23 @@ const DashboardPage = () => {
                   title="Editar nome"
                 >
                   <Edit2 size={18} />
-                </button>
+                </button>{" "}
               </div>
-            )}
+            )}{" "}
             <span className="photo-counter">
               {photos.length} fotos capturadas
-            </span>
+            </span>{" "}
           </div>
           <div
             className={`status-badge ${
               eventData.status === "PENDENTE" ? "warning" : "success"
             }`}
           >
-            <div className="live-dot"></div>
+            {" "}
+            <div className="live-dot"></div>{" "}
             {eventData.status === "PENDENTE"
               ? "AGUARDANDO PAGAMENTO"
-              : "SISTEMA NO AR"}
+              : "SISTEMA NO AR"}{" "}
           </div>
         </div>
 
@@ -578,16 +618,12 @@ const DashboardPage = () => {
             {eventData.status === "PENDENTE" ? (
               <div className="locked-state">
                 <Lock size={40} className="lock-icon" />
-
-                {/* --- LÓGICA INTELIGENTE: MOSTRA O PIX SALVO --- */}
                 {eventData.pix_copia_cola ? (
                   <>
                     <h4>Pagamento Pendente</h4>
                     <p style={{ fontSize: "0.9rem", color: "#94a3b8" }}>
                       Escaneie o QR Code para liberar:
                     </p>
-
-                    {/* QR Code gerado pelo texto salvo no banco */}
                     <div
                       style={{
                         margin: "15px 0",
@@ -609,7 +645,6 @@ const DashboardPage = () => {
                         }}
                       />
                     </div>
-
                     <button
                       className="btn-outline"
                       onClick={() => {
@@ -625,10 +660,9 @@ const DashboardPage = () => {
                         marginBottom: "10px",
                       }}
                     >
-                      <Copy size={16} /> Copiar Código
+                      {" "}
+                      <Copy size={16} /> Copiar Código{" "}
                     </button>
-
-                    {/* OPÇÃO DE PAGAR COM CARTÃO (CASO QUEIRA MUDAR) */}
                     <button
                       onClick={handleOpenPayment}
                       style={{
@@ -643,9 +677,9 @@ const DashboardPage = () => {
                         gap: "5px",
                       }}
                     >
-                      <CreditCard size={14} /> Prefere pagar com cartão?
+                      {" "}
+                      <CreditCard size={14} /> Prefere pagar com cartão?{" "}
                     </button>
-
                     <p
                       style={{
                         fontSize: "0.8rem",
@@ -653,7 +687,8 @@ const DashboardPage = () => {
                         color: "#64748b",
                       }}
                     >
-                      A tela atualizará sozinha após o pagamento. 🪄
+                      {" "}
+                      A tela atualizará sozinha após o pagamento. 🪄{" "}
                     </p>
                   </>
                 ) : (
@@ -661,37 +696,40 @@ const DashboardPage = () => {
                     <h4>QR Code Bloqueado</h4>
                     <p>Realize o pagamento para liberar o acesso.</p>
                     <button className="btn-primary" onClick={handleOpenPayment}>
-                      Pagar Agora
+                      {" "}
+                      Pagar Agora{" "}
                     </button>
                   </>
                 )}
               </div>
             ) : (
-              /* ESTADO LIBERADO */
               <>
                 <div className="qr-box">
+                  {" "}
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://www.appmemora.com.br/feed/${eventData.slug}`}
                     alt="QR Code"
-                  />
+                  />{" "}
                 </div>
                 <div className="link-box">
-                  <span>appmemora.com.br/feed/{slug}</span>
+                  {" "}
+                  <span>appmemora.com.br/feed/{slug}</span>{" "}
                   <button onClick={handleCopyLink}>
                     <Copy size={16} />
-                  </button>
+                  </button>{" "}
                 </div>
                 <button
                   className="btn-outline btn-print"
                   onClick={handleGeneratePDF}
                   disabled={generatingPdf}
                 >
+                  {" "}
                   {generatingPdf ? (
                     <Loader2 size={18} className="spin" />
                   ) : (
                     <Printer size={18} style={{ marginRight: "8px" }} />
-                  )}
-                  {generatingPdf ? "Gerando Arte..." : "Baixar Plaquinha PDF"}
+                  )}{" "}
+                  {generatingPdf ? "Gerando Arte..." : "Baixar Plaquinha PDF"}{" "}
                 </button>
               </>
             )}
@@ -703,23 +741,27 @@ const DashboardPage = () => {
               onClick={() => setIsTvMode(true)}
               disabled={eventData.status === "PENDENTE"}
             >
-              <MonitorPlay size={32} />
+              {" "}
+              <MonitorPlay size={32} />{" "}
               <div className="action-text">
                 <h3>Modo Telão</h3>
                 <p>Exibir slideshow ao vivo</p>
-              </div>
+              </div>{" "}
             </button>
             <button
               className="btn-action btn-share"
               onClick={handleWhatsappShare}
               disabled={eventData.status === "PENDENTE"}
             >
-              <Share2 size={32} />
+              {" "}
+              <Share2 size={32} />{" "}
               <div className="action-text">
                 <h3>Convidar</h3>
                 <p>Enviar link no WhatsApp</p>
-              </div>
+              </div>{" "}
             </button>
+
+            {/* LÓGICA DO DOWNLOAD (12H) */}
             <div className="zip-area">
               {downloadStatus.available ? (
                 <button
@@ -744,7 +786,7 @@ const DashboardPage = () => {
                   <CalendarClock size={32} />
                   <div className="action-text">
                     <h3>Download Bloqueado</h3>
-                    <p>Libera em: {downloadStatus.unlockDateStr}</p>
+                    <p>Libera em: {downloadStatus.label}</p>
                   </div>
                 </div>
               )}
@@ -754,11 +796,12 @@ const DashboardPage = () => {
 
         <div className="moderation-gallery-section">
           <div className="gallery-header">
-            <h2>Galeria do Evento</h2>
+            {" "}
+            <h2>Galeria do Evento</h2>{" "}
             <p>
               Clique na foto para ampliar. Baixe na <strong>esquerda</strong> ou
               exclua na <strong>direita</strong>.
-            </p>
+            </p>{" "}
           </div>
           {photos.length === 0 ? (
             <div className="gallery-empty">
@@ -766,9 +809,12 @@ const DashboardPage = () => {
             </div>
           ) : (
             <div className="gallery-grid">
+              {" "}
               {[...photos].reverse().map((photo) => (
                 <div key={photo.id} className="photo-card-moderation">
+                  {" "}
                   <div className="photo-wrapper">
+                    {" "}
                     <img
                       src={photo.url_final}
                       alt={`Foto de ${photo.nome_final}`}
@@ -778,7 +824,7 @@ const DashboardPage = () => {
                       }}
                       onClick={() => setSelectedPhoto(photo)}
                       style={{ cursor: "pointer" }}
-                    />
+                    />{" "}
                     <button
                       className="btn-overlay btn-download-photo"
                       onClick={(e) => {
@@ -788,7 +834,7 @@ const DashboardPage = () => {
                       title="Baixar foto"
                     >
                       <Download size={16} />
-                    </button>
+                    </button>{" "}
                     <button
                       className="btn-overlay btn-delete-photo"
                       onClick={(e) => {
@@ -798,19 +844,22 @@ const DashboardPage = () => {
                       title="Excluir foto"
                     >
                       <Trash2 size={16} />
-                    </button>
-                  </div>
+                    </button>{" "}
+                  </div>{" "}
                   <div className="photo-info">
-                    <span className="user-name">👤 {photo.nome_final}</span>
+                    {" "}
+                    <span className="user-name">
+                      👤 {photo.nome_final}
+                    </span>{" "}
                     <span className="photo-time">
                       {new Date(photo.created_at).toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                    </span>
-                  </div>
+                    </span>{" "}
+                  </div>{" "}
                 </div>
-              ))}
+              ))}{" "}
             </div>
           )}
         </div>
