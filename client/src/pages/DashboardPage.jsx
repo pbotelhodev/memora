@@ -351,7 +351,7 @@ const DashboardPage = () => {
   const handleWhatsappShare = () => {
     window.open(
       `https://wa.me/?text=${encodeURIComponent(
-        `Galera, postem as fotos aqui: ${window.location.origin}/feed/${slug}`
+        `Oi pessoal! Postem o seu momento aqui: ${window.location.origin}/feed/${slug}`
       )}`
     );
   };
@@ -417,7 +417,7 @@ const DashboardPage = () => {
       {isTvMode && (
         <div className="tv-overlay">
           <button className="btn-close-tv" onClick={() => setIsTvMode(false)}>
-            <X size={40} />
+            <X size={20} />
           </button>
           <div className="tv-layout-container">
             <div className="tv-side-column left">
