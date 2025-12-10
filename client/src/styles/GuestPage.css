@@ -17,7 +17,7 @@ body {
 .container-guest {
   max-width: 600px; /* Limita largura para simular app mobile */
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: #0f172a;
   padding-bottom: 70px; /* Espaço para a barra de navegação */
 }
