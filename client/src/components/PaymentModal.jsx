@@ -11,7 +11,8 @@ import {
   Lock,
   ListOrdered,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+// IMPORTANTE: Adicionei useLocation aqui
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import Inputs from "./Inputs";
 import { maskCardNumber, maskCardExpiry, maskCVV } from "../utils/mask";
@@ -22,11 +23,19 @@ const API_URL = "https://api-memora.onrender.com";
 
 const PaymentModal = ({ isOpen, onClose, paymentData }) => {
   const navigate = useNavigate();
+  const location = useLocation(); // Hook para saber a URL atual
+
+  // --- CONFIGURAÇÃO ---
   const MAX_PARCELAS = 3;
 
+  // --- STATES ---
   const [method, setMethod] = useState("PIX");
   const [loading, setLoading] = useState(false);
+
+  // State do Parcelamento
   const [installments, setInstallments] = useState(1);
+
+  // States do Pix
   const [pixResult, setPixResult] = useState(null);
   const [copied, setCopied] = useState(false);
 
@@ -36,6 +45,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
 
+  // --- RESETAR AO ABRIR ---
   useEffect(() => {
     if (isOpen) {
       setPixResult(null);
@@ -51,14 +61,27 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
 
   if (!isOpen || !paymentData) return null;
 
+  // --- LÓGICA DE REDIRECIONAMENTO ---
+  const handleSuccessRedirect = () => {
+    if (location.pathname.includes("/painel/")) {
+      window.location.reload();
+    } else {
+      navigate(`/painel/${paymentData.slug}`);
+    }
+  };
+
+  // --- CÁLCULO DE PARCELAS ---
   const valorTotal = parseFloat(paymentData.valor);
+
   const opcoesParcelamento = Array.from(
     { length: MAX_PARCELAS },
     (_, i) => i + 1
   );
 
+  // --- FUNÇÃO DE PAGAMENTO ---
   const handleConfirmPayment = async () => {
     setLoading(true);
+
     try {
       const payload = {
         nome: paymentData.cliente.nome,
@@ -94,7 +117,6 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
       const json = await response.json();
 
       if (json.sucesso) {
-        // 🔥 AQUI É O PULO DO GATO: SALVAR O PIX NO BANCO
         const pixParaSalvar = json.tipo === "PIX" ? json.pixCopiaCola : null;
         await salvarDadosPagamento(json.pagamentoId, pixParaSalvar);
 
@@ -103,7 +125,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
         } else {
           if (json.status === "CONFIRMED") {
             alert("Pagamento Aprovado! 🎉");
-            window.location.reload();
+            handleSuccessRedirect(); // Chama a função inteligente
           } else {
             alert("Pagamento em análise ou recusado.");
             onClose();
@@ -122,7 +144,6 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
 
   const salvarDadosPagamento = async (idPagamento, pixCode) => {
     const dadosUpdate = { asaas_id: idPagamento };
-    // Se tiver Pix, salva na coluna nova
     if (pixCode) {
       dadosUpdate.pix_copia_cola = pixCode;
     }
@@ -132,6 +153,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
       .eq("slug", paymentData.slug);
   };
 
+  // --- RENDER DA SELEÇÃO ---
   const renderSelection = () => (
     <>
       <div className="value-display-area">
@@ -139,6 +161,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
         <h3>
           R$ {valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
         </h3>
+
         {installments > 1 && (
           <div className="installments-badge">
             <p>
@@ -175,6 +198,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
             value={cardNumber}
             onChange={(e) => setCardNumber(maskCardNumber(e.target.value))}
           />
+
           <Inputs
             label="Nome Impresso"
             placeholder="Como no cartão"
@@ -182,6 +206,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
             value={cardName}
             onChange={(e) => setCardName(e.target.value.toUpperCase())}
           />
+
           <div className="row-inputs">
             <Inputs
               label="Validade"
@@ -200,6 +225,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
               onChange={(e) => setCardCvv(maskCVV(e.target.value))}
             />
           </div>
+
           <div className="input-wrapper mt-10">
             <label className="input-label">Parcelamento</label>
             <div className="input-field-container">
@@ -229,7 +255,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
 
       {method === "PIX" && (
         <div className="pix-info">
-          <p>Aprovação imediata via QR Code.</p>
+          <p>Aprovação imediata via QR Code. O método mais rápido.</p>
         </div>
       )}
 
@@ -251,6 +277,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
     </>
   );
 
+  // --- RENDER: PIX RESULT ---
   const renderPixResult = () => (
     <div className="pix-result">
       <img
@@ -269,7 +296,9 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
           {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
         </button>
       </div>
-      <button className="btn-success" onClick={() => window.location.reload()}>
+
+      {/* Botão agora usa a lógica inteligente */}
+      <button className="btn-success" onClick={handleSuccessRedirect}>
         Já fiz o pagamento
       </button>
     </div>
