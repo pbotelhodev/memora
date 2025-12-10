@@ -260,29 +260,53 @@ const DashboardPage = () => {
   const handleDeletePhoto = async (photoId, photoUrl) => {
     const confirmacao = window.confirm("Excluir esta foto permanentemente?");
     if (!confirmacao) return;
+
     try {
+      // 1. TENTA APAGAR DO STORAGE PRIMEIRO
+      // (Se falhar aqui, a gente vê o erro antes de apagar do banco)
+      if (photoUrl) {
+        // Extrai o caminho relativo da URL
+        // Ex: https://.../fotos-eventos/minha-festa/foto.jpg -> minha-festa/foto.jpg
+        const relativePath = photoUrl.split("/fotos-eventos/")[1];
+
+        if (relativePath) {
+          const pathDecoded = decodeURIComponent(relativePath);
+          console.log("Tentando apagar arquivo no path:", pathDecoded);
+
+          const { data, error: storageError } = await supabase.storage
+            .from("fotos-eventos")
+            .remove([pathDecoded]);
+
+          if (storageError) {
+            console.error("ERRO NO STORAGE:", storageError);
+            alert("Erro ao apagar arquivo físico: " + storageError.message);
+            // Decida se quer parar aqui ou continuar para apagar do banco
+            // return;
+          } else {
+            console.log("Arquivo deletado com sucesso:", data);
+          }
+        } else {
+          console.warn(
+            "Não foi possível extrair o caminho do arquivo da URL:",
+            photoUrl
+          );
+        }
+      }
+
+      // 2. APAGA DO BANCO DE DADOS
       const { error: dbError } = await supabase
         .from("fotos")
         .delete()
         .eq("id", photoId);
+
       if (dbError) throw dbError;
-      try {
-        if (photoUrl) {
-          const urlObj = new URL(photoUrl);
-          const pathParts = urlObj.pathname.split("/festas/");
-          if (pathParts.length > 1) {
-            const filePath = decodeURIComponent(pathParts[1]);
-            await supabase.storage.from("festas").remove([filePath]);
-          }
-        }
-      } catch (storageErr) {
-        console.warn("Aviso storage:", storageErr);
-      }
+
+      // 3. ATUALIZA A TELA
       setPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
       if (selectedPhoto && selectedPhoto.id === photoId) setSelectedPhoto(null);
     } catch (error) {
-      console.error("Erro deletar:", error);
-      alert("Erro ao excluir.");
+      console.error("Erro geral ao deletar:", error);
+      alert("Erro ao processar exclusão.");
     }
   };
 
