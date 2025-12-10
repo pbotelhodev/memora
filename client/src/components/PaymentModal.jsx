@@ -22,18 +22,11 @@ const API_URL = "https://api-memora.onrender.com";
 
 const PaymentModal = ({ isOpen, onClose, paymentData }) => {
   const navigate = useNavigate();
-
-  // --- CONFIGURAÇÃO ---
   const MAX_PARCELAS = 3;
 
-  // --- STATES ---
   const [method, setMethod] = useState("PIX");
   const [loading, setLoading] = useState(false);
-
-  // State do Parcelamento
   const [installments, setInstallments] = useState(1);
-
-  // States do Pix
   const [pixResult, setPixResult] = useState(null);
   const [copied, setCopied] = useState(false);
 
@@ -43,7 +36,6 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
 
-  // --- RESETAR AO ABRIR ---
   useEffect(() => {
     if (isOpen) {
       setPixResult(null);
@@ -59,18 +51,14 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
 
   if (!isOpen || !paymentData) return null;
 
-  // --- CÁLCULO DE PARCELAS ---
   const valorTotal = parseFloat(paymentData.valor);
-
   const opcoesParcelamento = Array.from(
     { length: MAX_PARCELAS },
     (_, i) => i + 1
   );
 
-  // --- FUNÇÃO DE PAGAMENTO ---
   const handleConfirmPayment = async () => {
     setLoading(true);
-
     try {
       const payload = {
         nome: paymentData.cliente.nome,
@@ -106,14 +94,16 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
       const json = await response.json();
 
       if (json.sucesso) {
-        await salvarIdPagamento(json.pagamentoId);
+        // 🔥 AQUI É O PULO DO GATO: SALVAR O PIX NO BANCO
+        const pixParaSalvar = json.tipo === "PIX" ? json.pixCopiaCola : null;
+        await salvarDadosPagamento(json.pagamentoId, pixParaSalvar);
 
         if (json.tipo === "PIX") {
           setPixResult(json);
         } else {
           if (json.status === "CONFIRMED") {
             alert("Pagamento Aprovado! 🎉");
-            navigate(`/painel/${paymentData.slug}`);
+            window.location.reload();
           } else {
             alert("Pagamento em análise ou recusado.");
             onClose();
@@ -130,14 +120,18 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
     }
   };
 
-  const salvarIdPagamento = async (idPagamento) => {
+  const salvarDadosPagamento = async (idPagamento, pixCode) => {
+    const dadosUpdate = { asaas_id: idPagamento };
+    // Se tiver Pix, salva na coluna nova
+    if (pixCode) {
+      dadosUpdate.pix_copia_cola = pixCode;
+    }
     await supabase
       .from("festas")
-      .update({ asaas_id: idPagamento })
+      .update(dadosUpdate)
       .eq("slug", paymentData.slug);
   };
 
-  // --- RENDER DA SELEÇÃO ---
   const renderSelection = () => (
     <>
       <div className="value-display-area">
@@ -145,9 +139,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
         <h3>
           R$ {valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
         </h3>
-
-        {/* PARCELAMENTO AUTOMÁTICO */}
-        {installments > 1  && (
+        {installments > 1 && (
           <div className="installments-badge">
             <p>
               {installments}x de R${" "}
@@ -183,7 +175,6 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
             value={cardNumber}
             onChange={(e) => setCardNumber(maskCardNumber(e.target.value))}
           />
-
           <Inputs
             label="Nome Impresso"
             placeholder="Como no cartão"
@@ -191,7 +182,6 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
             value={cardName}
             onChange={(e) => setCardName(e.target.value.toUpperCase())}
           />
-
           <div className="row-inputs">
             <Inputs
               label="Validade"
@@ -210,8 +200,6 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
               onChange={(e) => setCardCvv(maskCVV(e.target.value))}
             />
           </div>
-
-          {/* --- SELECT DE PARCELAMENTO --- */}
           <div className="input-wrapper mt-10">
             <label className="input-label">Parcelamento</label>
             <div className="input-field-container">
@@ -241,7 +229,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
 
       {method === "PIX" && (
         <div className="pix-info">
-          <p>Aprovação imediata via QR Code. O método mais rápido.</p>
+          <p>Aprovação imediata via QR Code.</p>
         </div>
       )}
 
@@ -263,7 +251,6 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
     </>
   );
 
-  // --- RENDER: PIX RESULT ---
   const renderPixResult = () => (
     <div className="pix-result">
       <img
@@ -282,10 +269,7 @@ const PaymentModal = ({ isOpen, onClose, paymentData }) => {
           {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
         </button>
       </div>
-      <button
-        className="btn-success"
-        onClick={() => navigate(`/painel/${paymentData.slug}`)}
-      >
+      <button className="btn-success" onClick={() => window.location.reload()}>
         Já fiz o pagamento
       </button>
     </div>

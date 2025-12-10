@@ -20,6 +20,8 @@ import "../styles/GuestPage.css";
 import { nanoid } from "nanoid";
 import logoMemora from "../assets/logo-memora.png";
 import poweredImage from "../assets/logo-full.png";
+// IMPORT DA REGRA DE TEMPO
+import { podePostarFoto } from "../utils/dateRules";
 
 const GuestPage = () => {
   const { slug } = useParams();
@@ -37,7 +39,7 @@ const GuestPage = () => {
 
   // BD & Regras de Negócio
   const [festa, setFesta] = useState(null);
-  const [removeMarcaDagua, setRemoveMarcaDagua] = useState(false); 
+  const [removeMarcaDagua, setRemoveMarcaDagua] = useState(false);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
 
@@ -87,23 +89,20 @@ const GuestPage = () => {
     setFesta(festaData);
 
     // 2. VERIFICAÇÃO DO CUPOM NO BANCO DE DADOS
-    // Se a festa tem um cupom atrelado, verifica se ele remove a marca d'água
     if (festaData.cupom) {
       const { data: cupomData } = await supabase
         .from("cupons")
         .select("remove_marca_dagua")
-        .eq("codigo", festaData.cupom) // Busca pelo código salvo na festa
-        .maybeSingle(); // maybeSingle evita erro se o cupom foi deletado
+        .eq("codigo", festaData.cupom)
+        .maybeSingle();
 
       if (cupomData?.remove_marca_dagua) {
-        console.log("💎 Cupom VIP detectado: Marca d'água REMOVIDA.");
         setRemoveMarcaDagua(true);
       } else {
-        console.log("🏷️ Cupom Padrão ou Sem Cupom: Marca d'água ATIVA.");
         setRemoveMarcaDagua(false);
       }
     } else {
-      setRemoveMarcaDagua(false); // Sem cupom = Com marca
+      setRemoveMarcaDagua(false);
     }
 
     setLoading(false);
@@ -254,15 +253,14 @@ const GuestPage = () => {
     }
   };
 
-  // --- DOWNLOAD INTELIGENTE (BASEADO NO BANCO) ---
+  // --- DOWNLOAD INTELIGENTE ---
   const handleDownloadFoto = (url) => {
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.src = url;
     document.title = "Baixando...";
 
-    // A Lógica agora é limpa: O banco já disse se remove ou não
-    const deveAplicarMarca = !removeMarcaDagua; // Se removeMarcaDagua for true, aplicar é false.
+    const deveAplicarMarca = !removeMarcaDagua;
 
     img.onload = () => {
       const canvas = document.createElement("canvas");
@@ -271,17 +269,15 @@ const GuestPage = () => {
       canvas.width = img.width;
       canvas.height = img.height;
 
-      // Desenha foto original
       ctx.drawImage(img, 0, 0);
 
       if (deveAplicarMarca) {
-        // --- APLICA MARCA D'ÁGUA ---
         const watermark = new window.Image();
         watermark.src = poweredImage;
         watermark.crossOrigin = "anonymous";
 
         watermark.onload = () => {
-          const wmWidth = canvas.width * 0.3; // 30% da largura
+          const wmWidth = canvas.width * 0.3;
           const aspectRatio = watermark.height / watermark.width;
           const wmHeight = wmWidth * aspectRatio;
 
@@ -298,11 +294,9 @@ const GuestPage = () => {
         };
 
         watermark.onerror = () => {
-          // Se falhar a marca, baixa sem ela mesmo (melhor que travar)
           saveCanvas(canvas);
         };
       } else {
-        // --- BAIXA LIMPA (VIP/PARCEIRO) ---
         saveCanvas(canvas);
       }
     };
@@ -342,7 +336,7 @@ const GuestPage = () => {
     document.body.removeChild(link);
   };
 
-  // --- CÂMERA LOGIC (4:5) ---
+  // --- CÂMERA LOGIC ---
   const handleDisparoCamera = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
@@ -607,6 +601,10 @@ const GuestPage = () => {
     };
   }, [abaAtiva, facingMode, festa?.id, localUserId, previewUrl]);
 
+  // --- CHECAGEM DE HORÁRIO PARA POSTAGEM ---
+  // Verifica se ainda está dentro das 12h do dia seguinte
+  const podePostar = festa ? podePostarFoto(festa.data_festa) : false;
+
   // --- RENDER ---
   if (mostrarEntry) {
     return (
@@ -671,7 +669,7 @@ const GuestPage = () => {
         <header className="header-party">
           <h1 className="header-gradient-title">{festa?.nome_festa}</h1>
           <button className="btn-refresh" onClick={handleRefresh}>
-            <RefreshCw size={20} color="currentColor" />
+            <RefreshCw size={15} />
           </button>
         </header>
       )}
@@ -909,16 +907,33 @@ const GuestPage = () => {
           <Home size={24} />
           <span className="nav-label">Feed</span>
         </button>
+
+        {/* --- BOTÃO DE CÂMERA (LÓGICA 12H) --- */}
         <button
-          className={`nav-item ${abaAtiva === "camera" ? "active" : ""}`}
+          className={`nav-item ${abaAtiva === "camera" ? "active" : ""} ${
+            !podePostar ? "disabled" : ""
+          }`} // Adiciona classe disabled
           onClick={() => {
-            setModoCamera("feed");
-            setAbaAtiva("camera");
+            if (podePostar) {
+              setModoCamera("feed");
+              setAbaAtiva("camera");
+            }
           }}
+          disabled={!podePostar} // Desabilita o clique real
         >
-          <Camera size={24} />
-          <span className="nav-label">Postar</span>
+          {podePostar ? (
+            <>
+              <Camera size={24} />
+              <span className="nav-label">Postar</span>
+            </>
+          ) : (
+            <>
+              <Lock size={24} />
+              <span className="nav-label">Encerrado</span>
+            </>
+          )}
         </button>
+
         <button
           className={`nav-item ${abaAtiva === "perfil" ? "active" : ""}`}
           onClick={() => setAbaAtiva("perfil")}

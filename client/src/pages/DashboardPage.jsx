@@ -19,10 +19,14 @@ import {
   Edit2,
   Check,
   Trash2,
+  CreditCard,
 } from "lucide-react";
+
+// MODAL REUTILIZADO
+import PaymentModal from "../components/PaymentModal";
 import "../styles/DashboardPage.css";
 
-// --- IMPORTS DOS ASSETS ---
+// ASSETS
 import templateImg from "../assets/template-plaquinha.png";
 import poppinsFont from "../assets/Poppins-Bold.ttf";
 import logoFull from "../assets/logo-full.png";
@@ -30,24 +34,24 @@ import logoFull from "../assets/logo-full.png";
 const DashboardPage = () => {
   const { slug } = useParams();
 
-  // --- STATES DE DADOS ---
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState(null);
   const [photos, setPhotos] = useState([]);
-
-  // --- STATES DE UI ---
   const [isTvMode, setIsTvMode] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState(null); // Estado do Modal
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+
+  // MODAL PAGAMENTO
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentDataForModal, setPaymentDataForModal] = useState(null);
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [downloading, setDownloading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
-
-  // --- STATES DE EDIÇÃO DE NOME ---
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
 
-  // --- 1. BUSCAR DADOS E REALTIME ---
+  // REALTIME
   useEffect(() => {
     document.title = "Memora | Gerenciar evento";
     fetchEventAndPhotos();
@@ -57,12 +61,44 @@ const DashboardPage = () => {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "fotos" },
-        (payload) => {
-          const novaFoto = {
-            ...payload.new,
-            nome_final: payload.new.nome || "Novo (Atualize a página)",
+        async (payload) => {
+          const novaFotoRaw = payload.new;
+          if (eventData && novaFotoRaw.festa_id !== eventData.id) return;
+          let nomeAutor = "Anônimo";
+          let fotoAutor = null;
+          if (novaFotoRaw.user_id) {
+            const { data: autorData } = await supabase
+              .from("convidados")
+              .select("nome, foto_perfil_url")
+              .eq("auth_id", novaFotoRaw.user_id)
+              .single();
+            if (autorData) {
+              nomeAutor = autorData.nome;
+              fotoAutor = autorData.foto_perfil_url;
+            }
+          }
+          const novaFotoCompleta = {
+            ...novaFotoRaw,
+            url_final: novaFotoRaw.url_foto || novaFotoRaw.url,
+            nome_final: novaFotoRaw.nome || nomeAutor,
+            foto_autor: fotoAutor,
           };
-          setPhotos((prev) => [...prev, novaFoto]);
+          setPhotos((prev) => [...prev, novaFotoCompleta]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "festas" },
+        (payload) => {
+          if (payload.new.slug === slug) {
+            setEventData((prev) => ({
+              ...prev,
+              status: payload.new.status,
+              nome_festa: payload.new.nome_festa,
+              pix_copia_cola: payload.new.pix_copia_cola,
+            }));
+            if (payload.new.status !== "PENDENTE") setShowPaymentModal(false);
+          }
         }
       )
       .subscribe();
@@ -70,9 +106,8 @@ const DashboardPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [slug]);
+  }, [slug, eventData?.id]);
 
-  // --- FETCH DE DADOS (COM CORREÇÃO DE NOMES E FOTO) ---
   const fetchEventAndPhotos = async () => {
     try {
       const { data: festa, error: festaError } = await supabase
@@ -80,7 +115,6 @@ const DashboardPage = () => {
         .select("*")
         .eq("slug", slug)
         .single();
-
       if (festaError) throw festaError;
       setEventData(festa);
 
@@ -90,42 +124,35 @@ const DashboardPage = () => {
           .select("*")
           .eq("festa_id", festa.id)
           .order("created_at", { ascending: true });
-
         if (fotosError) throw fotosError;
 
-        // Correção de nomes e fotos (Auth ID -> Tabela convidados)
         const userIds = [
           ...new Set(fotos.map((f) => f.user_id).filter((id) => id)),
         ];
-
-        let mapaDeUsuarios = {}; // Objeto para guardar nome e foto
-
+        let mapaDeUsuarios = {};
         if (userIds.length > 0) {
           const { data: usersData } = await supabase
             .from("convidados")
-            .select("auth_id, nome, foto_perfil_url") // <--- BUSCANDO A FOTO AQUI
+            .select("auth_id, nome, foto_perfil_url")
             .in("auth_id", userIds);
-
           if (usersData) {
             usersData.forEach((user) => {
               mapaDeUsuarios[user.auth_id] = {
                 nome: user.nome,
-                foto: user.foto_perfil_url, // <--- GUARDANDO A FOTO
+                foto: user.foto_perfil_url,
               };
             });
           }
         }
-
         const fotosComNomes = fotos.map((foto) => {
           const dadosUsuario = mapaDeUsuarios[foto.user_id] || {};
           return {
             ...foto,
             url_final: foto.url_foto || foto.url,
             nome_final: foto.nome || dadosUsuario.nome || "Anônimo",
-            foto_autor: dadosUsuario.foto || null, // <--- PASSANDO A FOTO PRO OBJETO
+            foto_autor: dadosUsuario.foto || null,
           };
         });
-
         setPhotos(fotosComNomes || []);
       }
     } catch (err) {
@@ -135,17 +162,31 @@ const DashboardPage = () => {
     }
   };
 
-  // --- 2. UPDATE NOME DA FESTA ---
+  const handleOpenPayment = () => {
+    const dadosParaPagamento = {
+      slug: eventData.slug,
+      valor: eventData.valor_pago,
+      cliente: {
+        nome: eventData.nome_cliente,
+        cpf: eventData.cpf_cliente,
+        email: eventData.email_cliente,
+        phone: eventData.whatsapp,
+        cep: eventData.cep,
+        numero: eventData.numero_residencia,
+      },
+    };
+    setPaymentDataForModal(dadosParaPagamento);
+    setShowPaymentModal(true);
+  };
+
   const handleUpdateName = async () => {
     if (!newName.trim()) return alert("O nome não pode ficar vazio.");
     setIsSavingName(true);
-
     try {
       const { error } = await supabase
         .from("festas")
         .update({ nome_festa: newName })
         .eq("id", eventData.id);
-
       if (error) throw error;
       setEventData({ ...eventData, nome_festa: newName });
       setIsEditingName(false);
@@ -157,7 +198,6 @@ const DashboardPage = () => {
     }
   };
 
-  // --- 3. SLIDESHOW ---
   useEffect(() => {
     let interval;
     if (isTvMode && photos.length > 0) {
@@ -168,7 +208,6 @@ const DashboardPage = () => {
     return () => clearInterval(interval);
   }, [isTvMode, photos]);
 
-  // --- 4. DOWNLOAD ZIP ---
   const checkDownloadAvailability = () => {
     if (!eventData) return { available: false, date: "" };
     const eventDate = new Date(eventData.data_festa + "T00:00:00");
@@ -203,20 +242,15 @@ const DashboardPage = () => {
     }
   };
 
-  // --- 5. DELETAR FOTO ---
   const handleDeletePhoto = async (photoId, photoUrl) => {
     const confirmacao = window.confirm("Excluir esta foto permanentemente?");
     if (!confirmacao) return;
-
     try {
       const { error: dbError } = await supabase
         .from("fotos")
         .delete()
         .eq("id", photoId);
-
       if (dbError) throw dbError;
-
-      // Tenta apagar do Storage
       try {
         if (photoUrl) {
           const urlObj = new URL(photoUrl);
@@ -229,22 +263,16 @@ const DashboardPage = () => {
       } catch (storageErr) {
         console.warn("Aviso storage:", storageErr);
       }
-
       setPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
-
-      // Fecha o modal se a foto apagada for a que está aberta
-      if (selectedPhoto && selectedPhoto.id === photoId) {
-        setSelectedPhoto(null);
-      }
+      if (selectedPhoto && selectedPhoto.id === photoId) setSelectedPhoto(null);
     } catch (error) {
       console.error("Erro deletar:", error);
       alert("Erro ao excluir.");
     }
   };
 
-  // --- AUXILIARES PDF ---
   const loadImageToBase64 = async (url) => {
-    try {
+    /* ... */ try {
       const response = await fetch(url);
       if (!response.ok) return null;
       const blob = await response.blob();
@@ -257,17 +285,13 @@ const DashboardPage = () => {
       return null;
     }
   };
-
   const loadFontToBase64 = async (url) => {
-    try {
+    /* ... */ try {
       const response = await fetch(url);
       const blob = await response.blob();
       return new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = reader.result.split(",")[1];
-          resolve(base64);
-        };
+        reader.onload = () => resolve(reader.result.split(",")[1]);
         reader.readAsDataURL(blob);
       });
     } catch (error) {
@@ -275,7 +299,6 @@ const DashboardPage = () => {
     }
   };
 
-  // --- 6. GERAR PDF ---
   const handleGeneratePDF = async () => {
     setGeneratingPdf(true);
     const doc = new jsPDF({
@@ -283,21 +306,14 @@ const DashboardPage = () => {
       unit: "mm",
       format: "a4",
     });
-
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&margin=0&data=https://www.appmemora.com.br/feed/${eventData.slug}`;
-    const backgroundUrl = templateImg;
-    const fontUrl = poppinsFont;
-
     try {
       const [bgBase64, qrBase64, fontBase64] = await Promise.all([
-        loadImageToBase64(backgroundUrl),
+        loadImageToBase64(templateImg),
         loadImageToBase64(qrUrl),
-        loadFontToBase64(fontUrl),
+        loadFontToBase64(poppinsFont),
       ]);
-
       if (!bgBase64) throw new Error("Template não encontrado.");
-      if (!qrBase64) throw new Error("QR Code não gerado.");
-
       if (fontBase64) {
         doc.addFileToVFS("Poppins.ttf", fontBase64);
         doc.addFont("Poppins.ttf", "Poppins", "bold");
@@ -305,14 +321,12 @@ const DashboardPage = () => {
       } else {
         doc.setFont("helvetica", "bold");
       }
-
       const titleY = 55;
       const titleColor = "#6b21a8";
       const titleSize = 32;
       const qrSize = 70;
       const qrY = 75;
       const qrX = (210 - qrSize) / 2;
-
       doc.addImage(bgBase64, "PNG", 0, 0, 210, 297);
       doc.setFontSize(titleSize);
       doc.setTextColor(titleColor);
@@ -321,7 +335,6 @@ const DashboardPage = () => {
         maxWidth: 160,
       });
       doc.addImage(qrBase64, "PNG", qrX, qrY, qrSize, qrSize);
-
       doc.save(`plaquinha-${slug}.pdf`);
     } catch (error) {
       console.error("Erro PDF:", error);
@@ -331,29 +344,32 @@ const DashboardPage = () => {
     }
   };
 
-  // --- INTERFACE ---
   const handleCopyLink = () => {
-    const linkFesta = `${window.location.origin}/feed/${slug}`;
-    navigator.clipboard.writeText(linkFesta);
+    navigator.clipboard.writeText(`${window.location.origin}/feed/${slug}`);
     alert("Link copiado!");
   };
-
   const handleWhatsappShare = () => {
-    const linkFesta = `${window.location.origin}/feed/${slug}`;
-    const texto = `Galera, postem as fotos aqui: ${linkFesta}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`);
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(
+        `Galera, postem as fotos aqui: ${window.location.origin}/feed/${slug}`
+      )}`
+    );
   };
 
   if (loading)
     return <div className="loading-screen">Carregando painel...</div>;
   if (!eventData)
     return <div className="error-screen">Evento não encontrado.</div>;
-
   const downloadStatus = checkDownloadAvailability();
 
   return (
     <div className="dashboard-container">
-      {/* --- MODAL DE FOTO (LIGHTBOX) --- */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        paymentData={paymentDataForModal}
+      />
+
       {selectedPhoto && (
         <div
           className="photo-modal-overlay"
@@ -363,21 +379,15 @@ const DashboardPage = () => {
             className="photo-modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Imagem Principal */}
             <img src={selectedPhoto.url_final} alt="Zoom" />
-
-            {/* Botão Fechar (Dentro da foto, topo direita) */}
             <button
               className="btn-close-modal"
               onClick={() => setSelectedPhoto(null)}
             >
               <X size={24} />
             </button>
-
-            {/* Barra Inferior (Dentro da foto, fundo vidro) */}
             <div className="modal-info-bar">
               <span>👤 {selectedPhoto.nome_final}</span>
-
               <div className="modal-actions-group">
                 <button
                   className="btn-modal-action download"
@@ -387,7 +397,6 @@ const DashboardPage = () => {
                       `memora-${selectedPhoto.id}.jpg`
                     )
                   }
-                  title="Baixar"
                 >
                   <Download size={20} />
                 </button>
@@ -396,7 +405,6 @@ const DashboardPage = () => {
                   onClick={() =>
                     handleDeletePhoto(selectedPhoto.id, selectedPhoto.url_final)
                   }
-                  title="Excluir"
                 >
                   <Trash2 size={20} />
                 </button>
@@ -406,17 +414,12 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* --- TV OVERLAY (MODO TELÃO PRO) --- */}
       {isTvMode && (
         <div className="tv-overlay">
-          {/* Botão Fechar */}
           <button className="btn-close-tv" onClick={() => setIsTvMode(false)}>
             <X size={40} />
           </button>
-
-          {/* Layout Principal: Coluna Esq | Centro | Coluna Dir */}
           <div className="tv-layout-container">
-            {/* 1. COLUNA ESQUERDA (QR + LOGO) */}
             <div className="tv-side-column left">
               <div className="tv-qr-box">
                 <p>Participe!</p>
@@ -426,19 +429,14 @@ const DashboardPage = () => {
                 />
                 <span>Aponte a câmera</span>
               </div>
-              {/* MARCA D'ÁGUA LATERAL */}
               <div className="tv-side-watermark animate-fade">
                 <img src={logoFull || ""} alt="Memora" />
               </div>
             </div>
-
-            {/* 2. CONTEÚDO CENTRAL (CARD 4:5 + AVATAR) */}
             <div className="tv-center-column">
               {photos.length > 0 ? (
                 <div className="tv-card-display animate-fade">
-                  {/* Cabeçalho do Card (Nome) */}
                   <div className="tv-card-header">
-                    {/* --- LÓGICA DO AVATAR --- */}
                     {photos[currentSlide].foto_autor ? (
                       <img
                         src={photos[currentSlide].foto_autor}
@@ -451,14 +449,10 @@ const DashboardPage = () => {
                         {(photos[currentSlide].nome_final || "A").charAt(0)}
                       </div>
                     )}
-                    {/* ----------------------- */}
-
                     <span className="tv-username">
                       {photos[currentSlide].nome_final}
                     </span>
                   </div>
-
-                  {/* Imagem do Card (Agora 4:5 Retrato) */}
                   <div className="tv-card-image-wrapper">
                     <img
                       src={
@@ -476,8 +470,6 @@ const DashboardPage = () => {
                 </div>
               )}
             </div>
-
-            {/* 3. COLUNA DIREITA (QR + LOGO) */}
             <div className="tv-side-column right">
               <div className="tv-qr-box">
                 <p>Participe!</p>
@@ -487,7 +479,6 @@ const DashboardPage = () => {
                 />
                 <span>Aponte a câmera</span>
               </div>
-              {/* MARCA D'ÁGUA LATERAL */}
               <div className="tv-side-watermark animate-fade">
                 <img src={logoFull || ""} alt="Memora" />
               </div>
@@ -496,7 +487,6 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* --- HEADER --- */}
       <header>
         <div className="header-profile-area">
           <div className="header-profile">
@@ -582,17 +572,102 @@ const DashboardPage = () => {
         </div>
 
         <div className="dashboard-grid">
-          {/* CARD ACESSO */}
+          {/* CARD DE ACESSO */}
           <div className="dash-card access-card">
             <h3>Acesso dos Convidados</h3>
             {eventData.status === "PENDENTE" ? (
               <div className="locked-state">
                 <Lock size={40} className="lock-icon" />
-                <h4>QR Code Bloqueado</h4>
-                <p>Realize o pagamento para liberar o acesso.</p>
-                <button className="btn-primary">Pagar Agora</button>
+
+                {/* --- LÓGICA INTELIGENTE: MOSTRA O PIX SALVO --- */}
+                {eventData.pix_copia_cola ? (
+                  <>
+                    <h4>Pagamento Pendente</h4>
+                    <p style={{ fontSize: "0.9rem", color: "#94a3b8" }}>
+                      Escaneie o QR Code para liberar:
+                    </p>
+
+                    {/* QR Code gerado pelo texto salvo no banco */}
+                    <div
+                      style={{
+                        margin: "15px 0",
+                        padding: "10px",
+                        background: "white",
+                        borderRadius: "8px",
+                        border: "1px solid #ddd",
+                      }}
+                    >
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=10&data=${encodeURIComponent(
+                          eventData.pix_copia_cola
+                        )}`}
+                        alt="QR Pix"
+                        style={{
+                          display: "block",
+                          width: "150px",
+                          height: "150px",
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      className="btn-outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(eventData.pix_copia_cola);
+                        alert("Código PIX copiado!");
+                      }}
+                      style={{
+                        fontSize: "0.85rem",
+                        padding: "8px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <Copy size={16} /> Copiar Código
+                    </button>
+
+                    {/* OPÇÃO DE PAGAR COM CARTÃO (CASO QUEIRA MUDAR) */}
+                    <button
+                      onClick={handleOpenPayment}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#a855f7",
+                        textDecoration: "underline",
+                        cursor: "pointer",
+                        fontSize: "0.8rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      <CreditCard size={14} /> Prefere pagar com cartão?
+                    </button>
+
+                    <p
+                      style={{
+                        fontSize: "0.8rem",
+                        marginTop: "15px",
+                        color: "#64748b",
+                      }}
+                    >
+                      A tela atualizará sozinha após o pagamento. 🪄
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h4>QR Code Bloqueado</h4>
+                    <p>Realize o pagamento para liberar o acesso.</p>
+                    <button className="btn-primary" onClick={handleOpenPayment}>
+                      Pagar Agora
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
+              /* ESTADO LIBERADO */
               <>
                 <div className="qr-box">
                   <img
@@ -622,7 +697,6 @@ const DashboardPage = () => {
             )}
           </div>
 
-          {/* CARD AÇÕES */}
           <div className="dash-card actions-card">
             <button
               className="btn-action btn-tv"
@@ -678,7 +752,6 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* --- GALERIA DE MODERAÇÃO --- */}
         <div className="moderation-gallery-section">
           <div className="gallery-header">
             <h2>Galeria do Evento</h2>
@@ -687,70 +760,57 @@ const DashboardPage = () => {
               exclua na <strong>direita</strong>.
             </p>
           </div>
-
           {photos.length === 0 ? (
             <div className="gallery-empty">
               <p>Nenhuma foto postada ainda.</p>
             </div>
           ) : (
             <div className="gallery-grid">
-              {[...photos].reverse().map((photo) => {
-                const imgUrl = photo.url_final;
-                const nomeAutor = photo.nome_final;
-
-                return (
-                  <div key={photo.id} className="photo-card-moderation">
-                    <div className="photo-wrapper">
-                      <img
-                        src={imgUrl}
-                        alt={`Foto de ${nomeAutor}`}
-                        loading="lazy"
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                        }}
-                        onClick={() => setSelectedPhoto(photo)} // Abre modal
-                        style={{ cursor: "pointer" }}
-                      />
-
-                      {/* Botões Overlay (Lista) */}
-                      <button
-                        className="btn-overlay btn-download-photo"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          saveAs(imgUrl, `memora-${photo.id}.jpg`);
-                        }}
-                        title="Baixar foto"
-                      >
-                        <Download size={16} />
-                      </button>
-
-                      <button
-                        className="btn-overlay btn-delete-photo"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePhoto(photo.id, imgUrl);
-                        }}
-                        title="Excluir foto"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-
-                    <div className="photo-info">
-                      <span className="user-name">👤 {nomeAutor}</span>
-                      <span className="photo-time">
-                        {new Date(photo.created_at).toLocaleTimeString(
-                          "pt-BR",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                    </div>
+              {[...photos].reverse().map((photo) => (
+                <div key={photo.id} className="photo-card-moderation">
+                  <div className="photo-wrapper">
+                    <img
+                      src={photo.url_final}
+                      alt={`Foto de ${photo.nome_final}`}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                      onClick={() => setSelectedPhoto(photo)}
+                      style={{ cursor: "pointer" }}
+                    />
+                    <button
+                      className="btn-overlay btn-download-photo"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        saveAs(photo.url_final, `memora-${photo.id}.jpg`);
+                      }}
+                      title="Baixar foto"
+                    >
+                      <Download size={16} />
+                    </button>
+                    <button
+                      className="btn-overlay btn-delete-photo"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePhoto(photo.id, photo.url_final);
+                      }}
+                      title="Excluir foto"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                );
-              })}
+                  <div className="photo-info">
+                    <span className="user-name">👤 {photo.nome_final}</span>
+                    <span className="photo-time">
+                      {new Date(photo.created_at).toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

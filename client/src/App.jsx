@@ -1,13 +1,14 @@
 //import { useState } from 'react'
 import "./styles/global.css";
-import HomePage from "./pages/HomePage";  
-import CreateEventPage from './pages/CreateEventPage'
-import { Routes, Route} from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import CreateEventPage from "./pages/CreateEventPage";
+import { Routes, Route } from "react-router-dom";
 import { ROUTES } from "./routes";
 import DashboardPage from "./pages/DashboardPage";
 import GuestPage from "./pages/GuestPage";
-
-
+import PainelAdmin from "./pages/PainelAdmin";
+import AdminDashboard from "./pages/adminDashboard";
+import AffiliatePage from "./pages/AffiliatePage";
 
 function App() {
   //const [count, setCount] = useState(0)
@@ -22,6 +23,12 @@ function App() {
       <Route path={ROUTES.SUCESS} element={<DashboardPage />} />
       {/* Rota 4: Feed do evento*/}
       <Route path={ROUTES.FEED} element={<GuestPage />} />
+      {/* Rota 5: Login do administrador */}
+      <Route path="/admin" element={<PainelAdmin />} />
+      {/*  Rota 6: Painel Administrador*/}
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      {/*  Rota 7: Afiliados */}
+      <Route path="/afiliado" element={<AffiliatePage />} />
     </Routes>
   );
 }
