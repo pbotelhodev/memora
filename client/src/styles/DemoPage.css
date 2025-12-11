@@ -1,12 +1,44 @@
+/* ==========================================================================
+   LAYOUT GERAL
+   ========================================================================== */
 .demo-container {
   background-color: #0f172a;
   min-height: 100vh;
   color: #f8fafc;
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* 1. HERO */
+/* --- BOTÃO PDF FLUTUANTE --- */
+.btn-save-pdf {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #a855f7;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 50px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  transition: transform 0.2s;
+  font-family: 'Poppins', sans-serif;
+  text-decoration: none; /* Remove sublinhado de link */
+}
+
+.btn-save-pdf:hover {
+  transform: scale(1.05);
+  background: #9333ea;
+  color: white;
+}
+
+/* --- 1. HERO SECTION --- */
 .demo-hero {
   text-align: center;
   padding: 60px 20px 40px;
@@ -39,7 +71,7 @@
   line-height: 1.5;
 }
 
-/* 2. CELULARES (MOCKUPS) */
+/* --- 2. MOCKUPS CELULARES --- */
 .demo-phones-section {
   padding: 20px 20px 60px;
   display: flex;
@@ -48,37 +80,37 @@
 
 .phones-grid {
   display: flex;
-  flex-direction: column; /* Mobile: um embaixo do outro */
+  flex-direction: column; /* Mobile: Coluna */
   gap: 40px;
   align-items: center;
 }
 
 .phone-mockup {
-  width: 220px; /* Largura base */
+  width: 220px;
   aspect-ratio: 9 / 18;
+  
   background: #000;
-  border: 8px solid #1e293b; /* Borda da carcaça */
-  border-radius: 24px; /* Cantos arredondados */
+  border: 8px solid #1e293b; 
+  border-radius: 24px;       
+  
   position: relative;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   transition: transform 0.3s ease;
-
-  /* Truque para renderizar melhor no Chrome */
   transform: translateZ(0);
 }
 
 .phone-mockup img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Garante que a imagem preencha tudo sem distorcer */
+  object-fit: cover;
   display: block;
 }
 
-/* 3. TELÃO */
+/* --- 3. TELÃO --- */
 .demo-tv-section {
   padding: 60px 20px;
-  background: #0b1120; /* Fundo mais escuro */
+  background: #0b1120;
   text-align: center;
 }
 
@@ -98,13 +130,15 @@
 
 .tv-frame {
   width: 100%;
-  max-width: 800px; /* Limita largura no PC para não pixelizar */
+  max-width: 800px;
   aspect-ratio: 16 / 9;
+  
   background: #000;
-  border: 12px solid #1e293b;
+  border: 12px solid #334155;
   border-radius: 12px;
+  
   position: relative;
-  box-shadow: 0 0 60px rgba(168, 85, 247, 0.15); /* Glow roxo */
+  box-shadow: 0 0 60px rgba(168, 85, 247, 0.15);
 }
 
 .tv-screen {
@@ -117,7 +151,8 @@
 .tv-screen img {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Mostra a imagem inteira na TV */
+  object-fit: contain; /* Contain para ver a imagem inteira */
+  display: block;
 }
 
 .tv-stand {
@@ -127,9 +162,11 @@
   margin-top: 0;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* 4. PASSOS */
+/* --- 4. PASSOS --- */
 .demo-steps {
   padding: 60px 20px;
   background: #0f172a;
@@ -175,7 +212,7 @@
   line-height: 1.5;
 }
 
-/* RODAPÉ */
+/* --- RODAPÉ --- */
 .demo-simple-footer {
   text-align: center;
   padding: 40px;
@@ -184,48 +221,39 @@
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* --- MEDIA QUERIES (DESKTOP) --- */
+/* ==========================================================================
+   MEDIA QUERIES (DESKTOP)
+   ========================================================================== */
 @media (min-width: 1024px) {
-  .demo-title {
-    font-size: 3.5rem;
-  }
-  .demo-subtitle {
-    font-size: 1.2rem;
-  }
-
-  /* Celulares lado a lado no PC */
+  .demo-title { font-size: 3.5rem; }
+  .demo-subtitle { font-size: 1.2rem; }
+  
+  /* Celulares lado a lado */
   .phones-grid {
-    flex-direction: row; /* Alinha horizontalmente */
+    flex-direction: row; 
     align-items: center;
     justify-content: center;
     gap: 60px;
-    padding: 60px 0;
+    padding: 40px 0;
   }
 
   .phone-mockup {
-    /* Trava largura no PC para manter qualidade */
-    width: 240px;
+    width: 240px; 
     border-width: 10px;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6);
   }
 
-  /* O Celular do meio ganha destaque e fica na frente */
+  /* Destaque central */
   .phone-mockup.center {
-    transform: scale(1.15); /* 15% maior */
+    transform: scale(1.15); 
     z-index: 10;
-    border-color: #475569;
+    border-color: #475569; 
     box-shadow: 0 40px 80px rgba(168, 85, 247, 0.25);
   }
 
-  .demo-tv-section h2 {
-    font-size: 2.5rem;
-  }
-  .tv-frame {
-    border-width: 16px;
-    border-radius: 16px;
-  }
-
-  /* Passos em 3 colunas */
+  .demo-tv-section h2 { font-size: 2.5rem; }
+  .tv-frame { border-width: 16px; border-radius: 16px; }
+  
   .steps-grid {
     grid-template-columns: repeat(3, 1fr);
   }
