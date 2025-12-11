@@ -9,6 +9,7 @@ import GuestPage from "./pages/GuestPage";
 import PainelAdmin from "./pages/PainelAdmin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AffiliatePage from "./pages/AffiliatePage";
+import DemoPage from "./pages/DemoPage";
 
 function App() {
   //const [count, setCount] = useState(0)
@@ -29,6 +30,8 @@ function App() {
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       {/*  Rota 7: Afiliados */}
       <Route path="/afiliado" element={<AffiliatePage />} />
+      {/*  Rota 8: Demonstração */}
+      <Route path="/apresentacao" element={<DemoPage />} />
     </Routes>
   );
 }
