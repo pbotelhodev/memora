@@ -10,7 +10,7 @@ import printCelular3 from "../assets/mockup-perfil.png";
 import printTelao from "../assets/exemplo-telao.png";
 
 // O SEU ARQUIVO PDF (Certifique-se que ele está na pasta assets com esse nome)
-import arquivoPdf from "../assets/apresentacao.pdf";
+import arquivoPdf from "../assets/memoraPdf.pdf";
 
 const DemoPage = () => {
   return (
