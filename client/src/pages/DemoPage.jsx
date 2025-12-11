@@ -8,8 +8,6 @@ import printCelular1 from "../assets/mockup-feed.png";
 import printCelular2 from "../assets/mockup-camera.png";
 import printCelular3 from "../assets/mockup-perfil.png";
 import printTelao from "../assets/exemplo-telao.png";
-
-// O SEU ARQUIVO PDF (Certifique-se que ele está na pasta assets com esse nome)
 import arquivoPdf from "../assets/memoraPdf.pdf";
 
 const DemoPage = () => {
